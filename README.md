@@ -8,7 +8,7 @@ This repository provides R and Python code that was used for analysis of a longi
 
 ## Methods
 
-This was a descriptive ecological study focusing on quantifying population exposure to wildfire smoke in Alaska and the creation of a wildfire smoke-specific social vulnerability index. Wildfire-specific fine particulate matter (PM2.5) exposure estimates were aggregated to the census tract level for 2003-2020. Census tract information was obtained from the Alaska Department of Labor and Statistics. Next, we calculated person-days of exposure to medium and heavy smoke, the frequency and duration of smoke waves, and census tract-level wildfire smoke-specific social vulnerability rankings. 
+This was a descriptive ecological study that quantified population exposure to wildfire smoke in Alaska and created a wildfire smoke-specific social vulnerability index for Census tract-level bivariate mapping. Wildfire-specific fine particulate matter (PM2.5) exposure estimates were aggregated to the census tract level for 2003-2020. Census tract information was obtained from the Alaska Department of Labor and Statistics. Next, we calculated person-days of exposure to medium and heavy smoke, the frequency and duration of smoke waves, and census tract-level wildfire smoke-specific social vulnerability rankings. 
 
 ### PM2.5 Concentration Aggregation and Calculations
 
