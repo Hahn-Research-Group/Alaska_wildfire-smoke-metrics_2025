@@ -36,8 +36,8 @@ These metrics were derived to measure the frequency, duration, and concentration
 
 Available in the **/raw_data/** folder are the following subfolders and files:
 **/Shapefiles/**
-- **Tracts2020.dbf, Tracts2020.prj, Tracts2020.sbn, Tracts2020.sbx, Tracts2020.shp, Tracts2020.shp, Tracts2020.shx/** - These files comprise the Alaska Census Tract Boundaries shapefile from the [Alaska 
-Department of Labor and Workforce Development] (https://live.laborstats.alaska.gov/article/maps-gis-data)
+- **Tracts2020.dbf, Tracts2020.prj, Tracts2020.sbn, Tracts2020.sbx, Tracts2020.shp, Tracts2020.shp, Tracts2020.shx** - These files form the Alaska Census Tract Boundaries shapefile from the [Alaska 
+Department of Labor and Workforce Development](https://live.laborstats.alaska.gov/article/maps-gis-data)
 
 **/Total PM2.5/**
 - This folder contains 215 netCDF files with raw, year-round GEOS-Chem modeled PM2.5 data from all sources
