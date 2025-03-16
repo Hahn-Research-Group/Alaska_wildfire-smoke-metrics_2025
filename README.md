@@ -1,6 +1,6 @@
 # Metrics for assessing the population health impact of wildfire smoke in Alaska
 ### Created by: Melissa Bradley, Nelsha Athauda
-### Version: 03/15/2025
+### Version: 03/16/2025
 
 ## Background
 
@@ -35,6 +35,16 @@ These metrics were derived to measure the frequency, duration, and concentration
 ## Data
 
 Available in the **/raw_data/** folder are the following subfolders and files:
+**/Shapefiles/**
+- **Tracts2020.dbf, Tracts2020.prj, Tracts2020.sbn, Tracts2020.sbx, Tracts2020.shp, Tracts2020.shp, Tracts2020.shx/** - These files comprise the Alaska Census Tract Boundaries shapefile from the [Alaska 
+Department of Labor and Workforce Development] (https://live.laborstats.alaska.gov/article/maps-gis-data)
+
+**/Total PM2.5/**
+- This folder contains 215 netCDF files with raw, year-round GEOS-Chem modeled PM2.5 data from all sources
+
+**/Wildfire Smoke PM2.5/**
+- This folder contains 90 netCDF files with raw GEOS-Chem modeled PM2.5 data attributed to wildfire smoke during the wildfire season (May–September)
+
 
 ## Scripts
 
