@@ -1,6 +1,6 @@
 # Metrics for assessing the population health impact of wildfire smoke in Alaska
-### Created by: Melissa Bradley
-### Version: 03/06/2025
+### Created by: Melissa Bradley, Nelsha Athauda
+### Version: 03/15/2025
 
 ## Background
 
@@ -39,16 +39,16 @@ Available in the **/raw_data/** folder are the following subfolders and files:
 ## Scripts
 
 Available in the **/scripts/** folder are the following files:
-- **0. average_by_tract.Rmd** - Averages WFS PM2.5 by census tract using zonal statistics
-- **1. average_daily_wfs_pm25_during_wfs_season.ipynb** - Calculates and maps 'Mean daily wildfire PM2.5 concentration during wildfire season'
-- **2. average_daily_wfs_pm25_full_year.ipynb** - Calculates and maps 'Annual mean daily wildfire PM2.5 concentration'
-- **3. average_daily_wfs_pm25_10_smokiest_days.ipynb** - Calculates and maps 'Mean daily wildfire PM2.5 concentration on 10 days with highest PM2.5 concentration each year'
-- **4. days_above_9.ipynb** - Calculates and maps 'Number of days with medium wildfire smoke density or worse'
-- **5. days_above_35.5.ipynb** - Calculates and maps 'Number of days with heavy wildfire smoke density'
-- **6. number_smoke_waves.Rmd** - Calculates 'Number of smoke waves'
-- **7. number_smoke_waves_maps.ipynb** - Maps 'Number of smoke waves'
-- **8. max_length_smoke_wave.Rmd** -  Calculates 'Maximum length of smoke wave'
-- **9. max_length_smoke_wave_maps.ipynb** - Maps 'Maximum length of smoke wave'
+- **1. average_by_tract.R** - Averages WFS PM2.5 by census tract using zonal statistics
+- **2. average_daily_wfs_pm25_during_wfs_season.ipynb** - Calculates and maps 'Mean daily wildfire PM2.5 concentration during wildfire season'
+- **3. average_daily_wfs_pm25_full_year.ipynb** - Calculates and maps 'Annual mean daily wildfire PM2.5 concentration'
+- **4. average_daily_wfs_pm25_10_smokiest_days.ipynb** - Calculates and maps 'Mean daily wildfire PM2.5 concentration on 10 days with highest PM2.5 concentration each year'
+- **5. medium_smoke_days.ipynb** - Calculates and maps 'Number of days with medium wildfire smoke density or worse'
+- **6. heavy_smoke_days.ipynb** - Calculates and maps 'Number of days with heavy wildfire smoke density'
+- **7. number_smoke_waves.R** - Calculates 'Number of smoke waves'
+- **8. number_smoke_waves_maps.ipynb** - Maps 'Number of smoke waves'
+- **9. max_length_smoke_wave.R** -  Calculates 'Maximum length of smoke wave'
+- **10. max_length_smoke_wave_maps.ipynb** - Maps 'Maximum length of smoke wave'
 - **11. Population Person-Days.rmd** - Calculates person-days, assigns categorical level of exposure
 - **12. High PM Tract Census Demographics and SVI.rmd** - Creates Wildfire Smoke Social Vulnerability Index and identifies + bivariate maps High PM and High WSSVI tracts
 - **13. PM_Methods_Stats.r** - Produces prevalence rates of WSSVI metrics of High PM tracts in table form and identifies annual first and last weeks of Medium and Heavy smoke exposure by month
