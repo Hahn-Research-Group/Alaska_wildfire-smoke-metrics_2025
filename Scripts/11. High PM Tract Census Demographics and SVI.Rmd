@@ -1,0 +1,854 @@
+---
+title: "WSVI of High Wildfire PM Exposure Tracts and Population-Weighted Mean PMs"
+author: "Melissa Bradley"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: simplex
+    toc: yes
+    toc_float: 
+      collapsed: true
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+
+# Packages
+
+library(tidyverse)    # Tidying
+library(ggplot2)      # Plotting
+library(ggrepel)      # Plot labels
+library(tidycensus)   # Census API Data 
+library(sf)           # For use w/ GIS data 
+library(tigris)       # Pulls AK shapefile
+library(scales)       # Plot Formatting
+library(here)         # Parent directories
+library(gridExtra)    # Arrange plots
+library(biscale)      # Bivariate plots
+library(kableExtra)   # Kable tables
+library(psych)        # For PCA, KMO, Bartlett’s test
+library(GPArotation)  # For varimax rotation
+library(factoextra)   # For scree plot & PCA visualization
+library(nFactors)     # For parallel analysis
+library(spdep)        # For Moran’s I
+
+knitr::opts_knit$set(root.dir = here::here())
+here::i_am("OneDrive Files/5. Population Exposure/Scripts/2. High PM Tract Census Demographics and SVI.Rmd")
+
+# Load ACS 2020 variables and search/view for selection in data frame below
+
+acs_2020_vars <- load_variables(2020,             # Year
+                                "acs5",           # Dataset Name
+                                cache = FALSE)    # Store locally for future use?
+```
+
+# Purpose
+
+This document details methods used to calculate and visualize:
+
+* Ranks and summary statistics for top 50% of Census Tracts in a Wildfire-specific Social Vulnerability Index (modeled after Jung et al., 2024) + top 50% of tracts of # of PM days above 9µg/m³
+* WSVI demographic percentage distributions of high smoke (>=50% PM rank) and low smoke (>50% PM rank) Census tracts.
+
+# Data Sources
+
+The following data sources were obtained and used for this part of the analysis:
+
+* **2020 US Census Bureau's American Community Survey (ACS) 5-Year Estimates:** Accessed via the Census API using <i> tidycensus </i>
+
+* **2020 State-Level CDC Social Vulnerability Index (SVI) by Census Tract:** The CDC SVI is a composite dataset derived from variables sourced from the Behavioral Risk Factor Surveillance System (BRFSS), the U.S. Census, and the ACS 5-Year Estimates.  
+
+* **2003-2020 Alaskan Wildfire-Specific PM Estimates:** Data on particulate matter specific to wildfire events in Alaska.
+
+* **2024 CDC PLACES Dataset:** This composite dataset includes Census Tract-level model-based estimates generated using 2021–2022 BRFSS data, 2020 Census population data, and ACS 2018–2022 estimates. The 2024 release was selected to align with the 2020 Census geographic boundaries, marking the first release to do so.
+
+# Variable Extraction
+
+```{r data import, results='hide'}
+
+rm(acs_2020_vars)
+census_api_key("d26391741175eb2ac704f92971d7333b1134986c", install = TRUE,
+               overwrite = TRUE)
+
+pop_exp <- read.csv(here::here("OneDrive Files/5. Population Exposure/Data/WFS_PM25_Population_Exposure_Rating.csv"))
+daily_pm_avg <- read.csv(here::here("OneDrive Files/5. Population Exposure/Data/Daily_Average_WFS_PM25_by_Census_Tract.csv"))
+cdc_svi <- read.csv(here::here("OneDrive Files/5. Population Exposure/Data/Alaska SVI CDC 2020.csv"))
+cdc_places <- read.csv(here::here("OneDrive Files/5. Population Exposure/Data/PLACES__Census_Tract_Data__GIS_Friendly_Format___2024_release_20250107.csv"))
+url <- "https://live.laborstats.alaska.gov/cen/maps/gis/Tracts2020.zip"
+destfile <- "Tracts2020.zip"
+extract_dir <- "Tracts2020"
+shapefile_path <- file.path(extract_dir, "Tracts2020.shp")
+
+if (!file.exists(shapefile_path)) {
+  if (!file.exists(destfile)) {
+    message("Downloading file...")
+    download.file(url, destfile, mode = "wb")
+  } else {
+    message("File already downloaded.")
+  }
+  
+  if (!dir.exists(extract_dir)) {
+    message("Extracting shapefile...")
+    unzip(destfile, exdir = extract_dir)
+  } else {
+    message("Shapefile already extracted.")
+  }
+} else {
+  message("Shapefile already exists. Skipping download and extraction.")
+}
+
+census_tracts <- st_read(shapefile_path)
+
+acs_data <- get_acs(
+  geography = "tract",
+  state = "AK",
+  variables = c(
+    # Population totals, sex and age groups
+    "B02010_001",  # AN/AI Alone or w/ other races
+    "B01003_001",  # Total population
+    "B01001_002",  # Total Males
+    "B01001_026",  # Total Females
+    "B01001_003",  # Kids under 5 (male)
+    "B01001_027",  # Kids under 5 (female)
+    "B01001_030", "B01001_031", "B01001_032", "B01001_033",  # Female 15-21 (childbearing age)
+    "B01001_034", "B01001_035", "B01001_036", "B01001_037",  # Female 22-39 (childbearing age)
+    "B01001_038", "B01001_039",  # Female 40-49 (childbearing age)
+    "B01001_020", "B01001_021", "B01001_022", "B01001_023",  # Male over 65-84 (various ages)
+    "B01001_024", "B01001_025",  # Male over 80+
+    "B01001_044", "B01001_045", "B01001_046", "B01001_047",  # Female over 65-84 (various ages)
+    "B01001_048", "B01001_049",  # Female over 80+
+
+    # Occupation data - Outdoor jobs (male variables shown)
+    "C24010_031",  # Farming, fishing, and forestry (male)
+    "C24010_067",  # Farming, fishing, and forestry (female)
+    "C24010_032",  # Construction and extraction (male)
+    "C24010_068",  # Construction and extraction (female)
+    "C24010_033",  # Installation, maintenance, and repair (male)
+    "C24010_069",  # Installation, maintenance, and repair (female)
+    "C24010_036",  # Transportation occupations (male)
+    "C24010_072",  # Transportation occupations (female)
+    "C24010_037",  # Material moving occupations (male)
+    "C24010_073",  # Material moving occupations (female)
+    "C24010_022",  # Firefighting (male)
+    "C24010_058",  # Firefighting (female)
+    "C24010_025",  # Building and grounds cleaning (male)
+    "C24010_061",  # Building and grounds cleaning (female)
+
+    # Occupation data - Non-Outdoor jobs
+    "C24010_005",  # Management (male)
+    "C24010_041",  # Management (female)
+    "C24010_008",  # Computer and mathematical occupations (male)
+    "C24010_044",  # Computer and mathematical occupations (female)
+    "C24010_011",  # Education, legal, community service, arts, and media (male)
+    "C24010_047",  # Education, legal, community service, arts, and media (female)
+    "C24010_016",  # Healthcare practitioners (male)
+    "C24010_052",  # Healthcare practitioners (female)
+    "C24010_020",  # Healthcare support (male)
+    "C24010_056",  # Healthcare support (female)
+    "C24010_024",  # Food preparation and serving (male)
+    "C24010_060",  # Food preparation and serving (female)
+    "C24010_026",  # Personal care and service (male)
+    "C24010_062",  # Personal care and service (female)
+    "C24010_028",  # Sales (male)
+    "C24010_064",  # Sales (female)
+    "C24010_029",  # Office and administrative support (male)
+    "C24010_065"   # Office and administrative support (female)
+  ),
+  year = 2020,
+  survey = "acs5"
+)
+
+acs_data <- acs_data %>%
+  mutate(
+    GEOID = as.numeric(GEOID))
+
+summary(pop_exp)
+```
+
+# Data Cleaning and Rank Creation
+
+The Alaskan Census/ACS, CDC PLACES and CDC SVI data were joined by creating Geographic Identifiers (GEOIDs) from FIPS codes
+in the SVI dataset. 
+
+We created or finalized the following variables for Alaska on the Census tract level from US Census estimates:
+
+* **Women of childbearing age (15-49)** - Combined Total Female 15-20, Total Female 21-39 and Total Female 40-49
+* **Occupation Data** (see below explanation)
+
+These variables were then converted to percentages by dividing each combined variable column by
+the total population variable column, then multiplying by 100. This resulted in percentages for 
+each Census tract.
+
+Two community health vulnerability sub-indices, Sensitivity and Adaptive Capacity, were created by grouping the following variables:
+
+- **Sub-Index 1: Sensitivity** 
+  - Aged 17 & Younger (CDC SVI/ACS) 
+  - Aged 65 & Older (CDC SVI/ACS)
+  - People with asthma (CDC PLACES/BRFSS)
+  - People with chronic obstructive pulmonary disease (COPD; CDC PLACES/BRFSS)
+  - People with cardiovascular disease (CHD; CDC PLACES/BRFSS)
+  - Women of childbearing age (Created directly from ACS)
+  - Outdoor workers (Created from ACS)
+  
+- **Sub-Index 2: Adaptive Capacity**
+  - Below 150% of the federal poverty limit (CDC SVI/ACS)
+  - Unemployed (Civilians age 16+; CDC SVI/ACS)
+  - Housing cost-burdened occupied housing units with annual income less than $75,000 (CDC SVI/ACS)
+  - No high school diploma (age 25+; CDC SVI/ACS)
+  - Uninsured (health insurance; CDC SVI/ACS)
+  - Civilian with a Disability (CDC SVI/ACS)
+  - Single-Parent Households (CDC SVI/ACS)
+  - English Language Proficiency (CDC SVI/ACS)
+
+A composite rank was created from these two themes, resulting in a single Wildfire-Specific Social Vulnerability Index (WSVI).
+
+Note: In this analysis, occupation data from the ACS (`C24010` codes) were classified into **Outdoor** and **Non-Outdoor** categories based on the nature of the work. This classification is used to assess potential exposure to environmental factors, including wildfire PM.
+
+- **Outdoor Occupations**: These involve significant outdoor work or physical labor, including natural resources, construction, and maintenance roles.
+  - **Natural Resources, Construction, and Maintenance**: Farming, fishing, forestry, construction, and maintenance work.
+  - **Production, Transportation, and Material Moving**: Includes transportation and material moving roles.
+  - **Service Occupations with Outdoor Components**: Protective services like firefighting and building maintenance.
+
+- **Non-Outdoor Occupations**: Primarily indoor or desk-based roles with less outdoor exposure.
+  - **Management, Business, Science, and Arts**: Includes management, business, and technical roles.
+  - **Service Occupations**: Food service, personal care, and healthcare support.
+  - **Sales and Office Occupations**: Sales, office administration, and technical support.
+  - **Professional, Scientific, and Technical Services**: Scientific, legal, and educational roles.
+  
+Census tracts with data source population estimates of 25 or less were excluded from this analysis (n = 1) due to potential unreliability of estimates, leaving a total of 175 tracts.
+
+
+```{r tidying, results = 'hide', cache = FALSE}
+
+cdc_places_ak <- cdc_places %>%
+  filter(StateDesc== "Alaska") %>%
+  select(TractFIPS, CASTHMA_CrudePrev, COPD_CrudePrev, CHD_CrudePrev) %>%
+  rename(GEOID = TractFIPS)
+
+cdc_svi <- cdc_svi %>%
+  rename_with(tolower) %>%
+  rename(GEOID = fips) %>%
+  mutate(across(everything(), ~ ifelse(. == -999.0, NA, .))) 
+  
+
+census_wide <- acs_data %>%
+    pivot_wider(names_from = variable, values_from = estimate, id_cols = c(GEOID, NAME)) %>%
+    group_by(GEOID) %>%
+    summarise(
+        NAME = first(NAME),
+        # Age and Sex categories
+        total_pop = max(B01003_001, na.rm = TRUE),
+        total_male = max(B01001_002, na.rm = TRUE),
+        total_female = max(B01001_026, na.rm = TRUE),
+        women_childbearing = sum(c_across(B01001_030:B01001_039), na.rm = TRUE),
+        
+        # Outdoor occupations
+        farming_fishing = max(C24010_031 + C24010_067, na.rm = TRUE),
+        construction = max(C24010_032 + C24010_068, na.rm = TRUE),
+        installation_repair = max(C24010_033 + C24010_069, na.rm = TRUE),
+        transportation = max(C24010_036 + C24010_072, na.rm = TRUE),
+        material_moving = max(C24010_037 + C24010_073, na.rm = TRUE),
+        firefighting = max(C24010_022 + C24010_058, na.rm = TRUE),
+        grounds_maintenance = max(C24010_025 + C24010_061, na.rm = TRUE),
+        
+        # Non-Outdoor occupations
+        management = max(C24010_005 + C24010_041, na.rm = TRUE),
+        computer_math = max(C24010_008 + C24010_044, na.rm = TRUE),
+        education_legal_media = max(C24010_011 + C24010_047, na.rm = TRUE),
+        healthcare_practitioners = max(C24010_016 + C24010_052, na.rm = TRUE),
+        healthcare_support = max(C24010_020 + C24010_056, na.rm = TRUE),
+        food_service = max(C24010_024 + C24010_060, na.rm = TRUE),
+        personal_care = max(C24010_026 + C24010_062, na.rm = TRUE),
+        sales = max(C24010_028 + C24010_064, na.rm = TRUE),
+        office_support = max(C24010_029 + C24010_065, na.rm = TRUE),
+        
+        # Outdoor Calculation
+        outdoor_jobs = sum(farming_fishing + construction + installation_repair + transportation + 
+                             material_moving + firefighting + grounds_maintenance, na.rm = TRUE)
+    )  %>%
+    left_join(cdc_svi, by = "GEOID") 
+
+# Calculate percentage summaries
+census_svi_final <- census_wide %>%
+  mutate(
+    pct_male = (total_male / total_pop) * 100,
+    pct_female = (total_female / total_pop) * 100,
+    pct_female_childbearing = (women_childbearing / total_pop) * 100,
+    pct_outdoor_jobs = (
+      farming_fishing + construction + installation_repair + transportation + material_moving + firefighting + grounds_maintenance
+    ) / total_pop * 100,
+    
+    pct_non_outdoor_jobs = (
+      management + computer_math + education_legal_media + healthcare_practitioners + healthcare_support +
+      food_service + personal_care + sales + office_support
+    ) / total_pop * 100
+  ) %>%
+   left_join(cdc_places_ak, by = "GEOID") 
+
+census_svi_final <- census_svi_final %>%
+  mutate(GEOID = as.character(GEOID))
+
+census_tracts <- census_tracts %>%
+  mutate(FIPS = str_remove(FIPS, "^0+"))
+
+census_svi_final <- census_svi_final %>%
+  left_join(census_tracts, by = c("GEOID" = "FIPS")) %>%
+  mutate(NAME = ifelse(!is.na(NAME.y), NAME.y, NAME.x)) %>% # Ensure FIPS has no leading zeros) 
+  select(-NAME.x, -NAME.y) %>% # Remove redundant columns
+  filter(!GEOID %in% c("2020980000", "2198000300")) %>% # Filter out =< 25 tracts
+    mutate(
+      
+    # Calculate percentile ranks for non-SVI variables
+    CASTHMA_CrudePrev_rank = percent_rank(CASTHMA_CrudePrev),
+    COPD_CrudePrev_rank = percent_rank(COPD_CrudePrev),
+    CHD_CrudePrev_rank = percent_rank(CHD_CrudePrev),
+    pct_female_childbearing_rank = percent_rank(pct_female_childbearing),
+    pct_outdoor_jobs_rank = percent_rank(pct_outdoor_jobs),
+    
+    # Apply ranks in themes
+    spl_theme1 = epl_age17 + epl_age65 + 
+      CASTHMA_CrudePrev_rank + COPD_CrudePrev_rank + CHD_CrudePrev_rank + 
+      pct_female_childbearing_rank + pct_outdoor_jobs_rank,
+    
+    spl_theme2 = epl_pov150 + epl_unemp + epl_hburd + epl_nohsdp + epl_uninsur +
+    epl_disabl + epl_sngpnt + epl_limeng,
+      rpl_theme1 = percent_rank(spl_theme1),
+      rpl_theme2 = percent_rank(spl_theme2),
+    
+    rpl_theme1 = percent_rank(spl_theme1),
+    rpl_theme2 = percent_rank(spl_theme2),
+    
+    composite_svi_sum = rpl_theme1 + rpl_theme2,
+    composite_svi_rank = percent_rank(composite_svi_sum), # Ranking scaled 0-1.0
+    
+
+  )
+
+```
+
+# WSVI and PM Tract Ranks
+
+## Rank ID and Visualization
+
+We next ranked Census tracts by the number of PM days over 9µg/m³, as well 
+as ranking them by Wildfire Social Vulnerability Index scores in Themes 1 and 2. PM ranks were
+normalized to a 0.0-0.1 scale to align with the CDC 0.0-0.1 SVI scale normalization
+for plotting.
+
+100 tracts were identified as being in the top 50% of wildfire PM days over 9µg/m³.
+44 tracts were identified as being in the top 50% of wildfire PM days over 9ug/m³ as well as the top 50% of WSVI rankings.
+
+dense_rank() assigns the same rank for Census tracts with the same number of PM 
+days over 9µg/m³. We plotted the top 50% of tracts and all tracts in two different
+plots: one highlighting the >50% WSVI and >50% Wildfire PM ranks in red and grey,
+and another in gradients of purple and orange.
+
+```{r svi tidy}
+
+# Filter to PM2.5 days over 9 µg/m³
+pm_by_tract <- daily_pm_avg %>%
+  filter(Date >= as.Date("2003-01-01") & Date <= as.Date("2020-12-31")) %>%
+  group_by(NAME) %>%
+  summarize(days_over_9ug = sum(PM2.5 > 9, na.rm = TRUE), .groups = "drop") %>%
+  arrange(desc(days_over_9ug)) %>%
+  mutate(pm_rank = dense_rank(desc(days_over_9ug)),
+         pm_normalized_rank = (max(pm_rank) - pm_rank) / (max(pm_rank) - 1)  # Scale from 0.0 to 1.0 w/ 1.0 = highest
+   ) 
+
+# Add PM rankings to the census_svi_final data
+pm_census_with_svi_rank <- census_svi_final %>%
+  inner_join(pm_by_tract, by = "NAME") %>%
+  mutate(
+    # composite_svi_rank = (rpl_theme1 + rpl_theme2) / 2,  # Composite SVI rank
+    highlight = ifelse(pm_normalized_rank >= 0.5 & composite_svi_rank >= 0.5, "High Smoke Exposure + High Wildfire Social Vulnerability", "Other")
+  )
+
+```
+
+## Quadrant Graphs 
+
+### Red and Gray 
+
+```{r red gray all, echo = F, warning=F, quiet = TRUE, fig.width=11, fig.height=8, dpi=300}
+
+# Filter for highlighted communities
+highlighted <- pm_census_with_svi_rank[pm_census_with_svi_rank$highlight == "High Smoke Exposure + High Social Vulnerability", ]
+
+# Dynamically scale padding and text size based on aspect ratio
+fig_width <- 14  # Set to match your chunk's fig.width
+fig_height <- 9 # Set to match your chunk's fig.height
+aspect_ratio <- fig_width / fig_height
+
+High_PM_High_SVI_RedGray <- ggplot(pm_census_with_svi_rank, aes(x = pm_normalized_rank , y =composite_svi_rank, color = highlight)) +
+  geom_point(alpha = 0.7, size = 3) +
+  
+  # Red labels for highlighted points
+  geom_text_repel(
+    data = pm_census_with_svi_rank %>% filter(highlight == "High Smoke Exposure + High Social Vulnerability"),
+    aes(label = NAME),
+    size = 3 / aspect_ratio,
+    color = "red", 
+    max.overlaps = Inf, 
+    box.padding = 0.25 / aspect_ratio, 
+    point.padding = 0.2 / aspect_ratio, 
+    segment.color = "grey50",
+    segment.size = 0.2 / aspect_ratio
+  ) +
+  
+  # Grey labels for non-highlighted points
+  geom_text_repel(
+    data = pm_census_with_svi_rank %>% filter(highlight != "High Smoke Exposure + High Social Vulnerability"),
+    aes(label = NAME),
+    size = 2.5 / aspect_ratio,
+    color = "grey35", 
+    max.overlaps = Inf, 
+    box.padding = 0.15 / aspect_ratio, 
+    point.padding = 0.1 / aspect_ratio, 
+    segment.color = "grey35",
+    segment.size = 0.1 / aspect_ratio
+  ) +
+  
+  geom_vline(xintercept = 0.5, linetype = "dashed", color = "black", alpha = 0.8) +
+  geom_hline(yintercept = 0.5, linetype = "dashed", color = "black", alpha = 0.8) +
+  scale_color_manual(values = c("High Smoke Exposure + High Wildfire Social Vulnerability" = "red", "Other" = "grey35")) +
+  labs(
+    x = "Wildfire Smoke Exposure Rank",
+    y = "Wildfire Social Vulnerability Rank", 
+    title = "High PM + High WSVI Communities in Alaska"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+    legend.position = "top",
+    legend.title = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line.x.bottom = element_line(color = "gray", linewidth = 0.7),
+    axis.line.y.left = element_line(color = "gray", linewidth = 0.7),
+    axis.line.y.right = element_line(color = "gray", linewidth = 0.7)
+  )
+
+High_PM_High_SVI_RedGray
+
+# ggsave("High_PM_High_SVI_RedGray.png", plot = High_PM_High_SVI_RedGray, 
+#         width = 12, height = 8, dpi = 300, units = "in")
+
+
+```
+
+### Purple/Orange/Red
+
+```{r purple orange red all, echo = F, warning = F, quiet = TRUE, fig.width=11, fig.height=8, dpi=300}
+
+# Step 1: Classify points using biscale
+pm_census_with_svi_rank <- bi_class(
+  pm_census_with_svi_rank,
+  x = pm_normalized_rank,    # First variable: PM Exposure Rank
+  y = composite_svi_rank,    # Second variable: SVI Rank
+  style = "quantile",        # Classification style
+  dim = 3                    # 3x3 grid
+)
+
+# Updated scatterplot
+  
+High_PM_High_SVI_Colors <- ggplot() +
+
+  # Points with bivariate colors
+  geom_point(
+    data = pm_census_with_svi_rank,
+    aes(x = pm_normalized_rank, y = composite_svi_rank, color = bi_class),
+    size = 3, alpha = 0.7
+  ) +
+  bi_scale_color(pal = "PurpleOr", dim = 3) +  # Apply bivariate colors to points
+  
+  # Red labels for upper-right quadrant (High PM and High SVI)
+  geom_text_repel(
+    data = pm_census_with_svi_rank %>%
+      filter(pm_normalized_rank > 0.5 & composite_svi_rank > 0.5),
+    aes(x = pm_normalized_rank, y = composite_svi_rank, label = NAME),
+    color = "red",
+    size = 3,
+    max.overlaps = Inf,
+    box.padding = 0.3,
+    point.padding = 0.2,
+    segment.color = "gray50",
+    segment.size = 0.2
+  ) +
+  
+  # Gray labels for all other quadrants
+  geom_text_repel(
+    data = pm_census_with_svi_rank %>%
+      filter(!(pm_normalized_rank > 0.5 & composite_svi_rank > 0.5)),
+    aes(x = pm_normalized_rank, y = composite_svi_rank, label = NAME),
+    color = "gray35",
+    size = 2.5,
+    max.overlaps = Inf,
+    box.padding = 0.2,
+    point.padding = 0.1,
+    segment.color = "gray35",
+    segment.size = 0.1
+  ) +
+  
+  # Vertical and horizontal lines
+  geom_vline(xintercept = 0.5, linetype = "dashed", color = "black", alpha = 0.8) +
+  geom_hline(yintercept = 0.5, linetype = "dashed", color = "black", alpha = 0.8) +
+  
+  # Labels and titles
+  labs(
+    x = "Wildfire Smoke Exposure Rank",
+    y = "Wildfire Social Vulnerability Rank",
+    title = "High PM + High WFSSVI Census Tracts in Alaska"
+  ) +
+  
+  # Theme adjustments
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+    legend.position = "none",  # Hide the legend
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+
+High_PM_High_SVI_Colors
+
+
+ggsave("High_PM_High_SVI_Colors.png", plot = High_PM_High_SVI_Colors, 
+        width = 12, height = 8, dpi = 300, units = "in")
+
+```
+
+
+## Demographic Summary of High SVI + High PM AK Census Tracts
+
+The following summary provides insights into key population characteristics for Alaska's census tracts identified as having both high wildfire social vulnerability and high wildfire PM exposure:
+
+```{r high_svi_pm_tidy}
+
+pm_census_with_svi_rank <- pm_census_with_svi_rank %>%
+  mutate(
+    # Flag only high PM tracts (>= 0.5).  
+    # If you want a different cutoff, adjust the 0.5 threshold.
+    highlight = ifelse(pm_normalized_rank >= 0.5, "High PM Exposure", "Other")
+  )
+
+
+# Extract the list of names for High Smoke Exposure + High Social Vulnerability tracts
+high_pm_names <- pm_census_with_svi_rank %>%
+  filter(highlight == "High PM Exposure") %>%
+  pull(NAME)
+
+# Filter census tracts based on the High SVI + High PM list and join with census_svi_final data
+high_pm_census <- census_tracts %>%
+  filter(NAME %in% high_pm_names) %>%
+  mutate(GEOID = as.numeric(FIPS)) %>%
+  left_join(census_svi_final %>% mutate(GEOID = as.numeric(GEOID)), by = "GEOID") %>%
+  select(-ends_with(".y")) %>%  # Remove columns ending in ".y"
+  rename_with(~ str_remove(., "\\.x$"), ends_with(".x"))  # Remove ".x" from column names
+
+# (Optional) If you want to keep information like rank or days_over_9ug from the PM dataset,
+# and if pm_census_with_svi_rank includes those columns, you can join them here:
+# high_svi_pm_census <- high_svi_pm_census %>%
+#   left_join(pm_census_with_svi_rank %>% select(NAME, rank, days_over_9ug), by = "NAME")
+
+total_pop_selected <- sum(high_pm_census$TOTALPOP, na.rm = TRUE)
+total_pop_ak       <- sum(pm_census_with_svi_rank$TOTALPOP, na.rm = TRUE)
+percent_pop        <- (total_pop_selected / total_pop_ak) * 100
+
+pop_range <- range(high_pm_census$TOTALPOP, na.rm = TRUE)
+
+demographics_summary <- high_pm_census %>%
+  summarize(
+    ep_age17               = mean(ep_age17, na.rm = TRUE),            # Children <18
+    ep_age65               = mean(ep_age65, na.rm = TRUE),            # Elderly 65+
+    pct_female_childbearing = mean(pct_female_childbearing, na.rm = TRUE), 
+    CASTHMA_CrudePrev       = mean(CASTHMA_CrudePrev, na.rm = TRUE), 
+    COPD_CrudePrev          = mean(COPD_CrudePrev, na.rm = TRUE),
+    CHD_CrudePrev           = mean(CHD_CrudePrev, na.rm = TRUE),
+    pct_outdoor_jobs        = mean(pct_outdoor_jobs, na.rm = TRUE)
+  )
+
+```
+
+### Population and Distribution
+
+The selected census tracts represent **`r round(percent_pop, 2)`%** of Alaska's total population. Within these tracts, the population size varies widely, ranging from **`r pop_range[1]`** to **`r pop_range[2]`** individuals per tract.
+
+### Key Demographic Characteristics
+
+- **Children (<18 years of age)**: `r round(demographics_summary$ep_age17, 2)`% of the population in these tracts are children under 18 years of age.  
+- **Elderly (>65 years of age)**: `r round(demographics_summary$ep_age65, 2)`% of the population are aged 65 and older.  
+- **Women of Childbearing Age (15-49 years)**: Women of childbearing age represent `r round(demographics_summary$pct_female_childbearing, 2)`% of the population.  
+- **Individuals with Asthma**: `r round(demographics_summary$CASTHMA_CrudePrev, 2)`% of the population are individuals with asthma.  
+- **Individuals with COPD**: `r round(demographics_summary$COPD_CrudePrev, 2)`% of the population are individuals with chronic obstructive pulmonary disease (COPD). 
+- **Individuals with CHD**: `r round(demographics_summary$CHD_CrudePrev, 2)`% of the population are individuals with cardiovascular disease (CHD).
+- **Outdoor Workers**: Outdoor workers make up `r round(demographics_summary$pct_outdoor_jobs, 2)`% of the population, reflecting those involved in natural resources, construction, and other outdoor occupations.
+
+## Bivariate Map
+
+A bivariate map was then created of wildfire smoke exposure and WFSVI by Census tract. Due to the strong variability in Alaskan Census tract size, separate vectors were created of all Census tracts in the Anchorage Borough and for Census tracts in the Fairbanks North Star Borough. 
+
+```{r geospatial svi, echo = F, warning = F, quiet = TRUE, fig.width=11, fig.height=8, dpi=300}
+
+pm_census_with_svi_rank_sf <- pm_census_with_svi_rank %>%
+  left_join(
+    census_tracts %>% select(FIPS, geometry),
+    by = c("GEOID" = "FIPS")
+  )
+
+pm_census_with_svi_rank_sf <- st_as_sf(pm_census_with_svi_rank_sf)
+
+# Step 1: Prepare the data and create bivariate classes
+pm_census_with_svi_rank_sf <- bi_class(
+  pm_census_with_svi_rank_sf,
+  x = pm_normalized_rank,   # First variable: PM exposure rank
+  y = composite_svi_rank,  # Second variable: SVI rank
+  style = "quantile",      # Classification style
+  dim = 3                  # 3x3 grid
+)
+
+# Step 2: Create the bivariate map
+map <- ggplot() +
+  geom_sf(
+    data = pm_census_with_svi_rank_sf,
+    mapping = aes(fill = bi_class),
+    color = "white", size = 0.01
+  ) +
+  bi_scale_fill(pal = "PurpleOr", dim = 3) + # Palette for bivariate mapping
+  labs(
+    title = "Wildfire Smoke Exposure and Wildfire Social Vulnerability in Alaska"
+  ) +
+    bi_theme() +  # Assuming you're using a theme function for bivariate maps
+  theme(
+    legend.position = "none",
+      plot.title = element_text(size = rel(1.0), face = "bold", hjust = 0.5, margin = margin(b = 10)), # Dynamic sizing
+  ) 
+
+# Step 3: Create the bivariate legend
+legend <- bi_legend(
+  pal = "PurpleOr",          # Same palette as the map
+  dim = 3,                 # Same dimensions as the map
+  xlab = "Higher PM Exposure", # X-axis label
+  ylab = "Higher SVI Score",   # Y-axis label
+  size = 8                 # Font size for labels
+)
+
+# Step 4: Combine the map and legend
+final_plot <- ggdraw() +
+  draw_plot(map, 0, 0, 1, 1) +         # Map takes full space
+  draw_plot(legend, 0.2, 0.2, 0.2, 0.2) # Adjust legend to Gulf area
+
+# Step 5: Display the final plot
+final_plot
+
+ggsave("Bivariate_Map.png", plot = final_plot,
+        width = 1700, height = 830, dpi = 300, units = "px")
+
+```
+
+
+
+```{r fairbank anch maps}
+#-------------------------
+# 3. Anchorage Subset
+#-------------------------
+# Example approach: filter by FIPS prefix if Anchorage is "02020..."
+# (Adjust as needed for your data)
+pm_anchorage_sf <- pm_census_with_svi_rank_sf %>%
+  filter(county == "Anchorage Municipality")
+
+# (Optional) If you want Anchorage to have the *same* exact color bins 
+# as the statewide map, skip re-running bi_class() because you already 
+# have a `bi_class` column. If you want new bins *just for Anchorage*, 
+# uncomment the code below:
+
+# pm_anchorage_sf <- bi_class(
+#   pm_anchorage_sf,
+#   x = pm_normalized_rank,
+#   y = composite_svi_rank,
+#   style = "quantile",
+#   dim = 3
+# )
+
+map_anchorage <- ggplot() +
+  geom_sf(
+    data = pm_anchorage_sf,
+    aes(fill = bi_class),
+    color = "white", 
+    size = 0.01
+  ) +
+  bi_scale_fill(pal = "PurpleOr", dim = 3) +
+  bi_theme() +             # If you need the custom bivariate theme
+  theme_void() +           # Removes axes, grid, background
+  theme(
+    legend.position = "none",  # Removes legend
+    plot.title = element_text()  # Keep or remove as desired
+  )
+
+map_anchorage
+
+ggsave(
+  "Anchorage_Bivariate_Map.png",
+  plot = map_anchorage,
+  width = 1700, height = 830, dpi = 300, units = "px"
+)
+
+
+#-------------------------
+# 4. Fairbanks Subset
+#-------------------------
+# Example approach: filter by FIPS prefix if Fairbanks is "02090..."
+# (Again, adjust as needed)
+pm_fairbanks_sf <- pm_census_with_svi_rank_sf %>%
+  filter(county == "Fairbanks North Star Borough")
+
+# (Optional) Re-run bi_class() if you want new bins only for Fairbanks
+# pm_fairbanks_sf <- bi_class(
+#   pm_fairbanks_sf,
+#   x = pm_normalized_rank,
+#   y = composite_svi_rank,
+#   style = "quantile",
+#   dim = 3
+# )
+
+map_fairbanks <- ggplot() +
+  geom_sf(
+    data = pm_fairbanks_sf,
+    aes(fill = bi_class),
+    color = "white", 
+    size = 0.01
+  ) +
+  bi_scale_fill(pal = "PurpleOr", dim = 3) +
+  bi_theme() +             # If you need the custom bivariate theme
+  theme_void() +           # Removes axes, grid, background
+  theme(
+    legend.position = "none",  # Removes legend
+    plot.title = element_text()  # Keep or remove as desired
+  )
+
+map_fairbanks
+
+ggsave(
+  "Fairbanks_Bivariate_Map.png",
+  plot = map_fairbanks,
+  width = 1700, height = 830, dpi = 300, units = "px"
+)
+
+
+```
+
+
+## Distribution Boxplots
+
+The grouped Sensitivity and Adaptive Capacity variables were then stratified by High Smoke Census Tracts (Census Tracts within the top 50%
+ranking of unhealthy levels of smoke exposure) and Low Smoke tracts (tracts within the lower 50% ranking of unhealthy levels of smoke exposure).
+The averages of these proportions were then compared between each group. 
+
+```{r dist hist}
+
+hist_data <- pm_census_with_svi_rank %>%
+  mutate(
+    PM_Category = ifelse(pm_normalized_rank >= 0.5, "High Smoke", "Low Smoke")
+  ) %>%
+  select(NAME,
+    PM_Category,
+    ep_age17, ep_age65, pct_female_childbearing, pct_outdoor_jobs,
+    CASTHMA_CrudePrev, COPD_CrudePrev, CHD_CrudePrev,
+    ep_pov150, ep_unemp, ep_hburd, ep_nohsdp, ep_uninsur,
+    ep_disabl, ep_sngpnt, ep_limeng
+  ) %>%
+  pivot_longer(
+    cols = -c(NAME, PM_Category),  # Exclude NAME and PM_Category from pivoting
+    names_to = "Demographic",
+    values_to = "Percentage"
+  ) %>%
+  mutate(
+    Demographic = recode(
+      Demographic,
+      ep_age17 = "Children <18",
+      ep_age65 = "Elderly >65",
+      pct_female_childbearing = "Women of Childbearing Age",
+      pct_outdoor_jobs = "Outdoor Jobs",
+      CASTHMA_CrudePrev = "Asthma Prevalence",
+      COPD_CrudePrev = "COPD Prevalence",
+      CHD_CrudePrev = "CHD Prevalence",
+      ep_pov150 = "Below 150% Poverty Line",
+      ep_unemp = "Unemployed",
+      ep_hburd = "Housing Cost Burdened",
+      ep_nohsdp = "No High School Diploma",
+      ep_uninsur = "Uninsured",
+      ep_disabl = "Disabled",
+      ep_sngpnt = "Single-Parent Households",
+      ep_limeng = "Limited English Proficiency"
+    ),
+      Percentage = case_when(
+      Percentage <= 1 & max(Percentage) <= 1 ~ Percentage * 100, # Only transform if max value is <= 1
+      TRUE ~ Percentage
+    )
+  ) %>%
+  mutate(
+    Theme = case_when(
+      Demographic %in% c("Children <18", "Elderly >65", "Women of Childbearing Age", 
+                         "Outdoor Jobs", "Asthma Prevalence", "COPD Prevalence", "CHD Prevalence") ~ "Sensitivity",
+      TRUE ~ "Adaptive Capacity"
+    )
+  ) %>%
+  mutate(
+    Theme_PM = interaction(Theme, PM_Category, sep = ".")  # Create a combined factor for fill
+  ) %>%
+  mutate(
+    Demographic = factor(
+      Demographic,
+      levels = c(
+        # Sensitivity variables
+        "Children <18", "Elderly >65", "Women of Childbearing Age", 
+        "Outdoor Jobs", "Asthma Prevalence", "COPD Prevalence", "CHD Prevalence",
+        # Adaptive Capacity variables
+        "Below 150% Poverty Line", "Unemployed", "Housing Cost Burdened", 
+        "No High School Diploma", "Uninsured", "Disabled", 
+        "Single-Parent Households", "Limited English Proficiency"
+      )
+    )
+  )
+
+
+# Define custom color palettes for each theme
+custom_colors <- c(
+  "Sensitivity.High Smoke" = "#8B0000",  # Dark Red
+  "Sensitivity.Low Smoke" = "#FF7F7F",   # Light Red (Pinkish)
+  "Adaptive Capacity.High Smoke" = "#FF8C00",  # Dark Orange
+  "Adaptive Capacity.Low Smoke" = "#FFD580"    # Light Orange (Pale)
+)
+
+# Create the plot
+ggplot(hist_data, aes(x = PM_Category, y = Percentage, fill = Theme_PM)) +
+  geom_boxplot(alpha = 0.7, outlier.shape = NA) +  # Add transparency and remove outliers
+  facet_wrap(~Demographic, scales = "free_y", ncol = 3) +  # Facet by demographic
+  scale_fill_manual(
+    values = custom_colors,
+    labels = c(
+      "Sensitivity.High Smoke" = "High Smoke (Sensitivity)",
+      "Sensitivity.Low Smoke" = "Low Smoke (Sensitivity)",
+      "Adaptive Capacity.High Smoke" = "High Smoke (Adaptive Capacity)",
+      "Adaptive Capacity.Low Smoke" = "Low Smoke (Adaptive Capacity)"
+    ),
+    limits = c(
+      "Sensitivity.High Smoke", "Sensitivity.Low Smoke", 
+      "Adaptive Capacity.High Smoke", "Adaptive Capacity.Low Smoke"
+    )
+  ) +
+  labs(
+    title = "Demographic Percentages by Smoke Exposure Level",
+    x = "Census Tracts by Smoke Exposure Level",
+    y = "Percentage of Population",
+    fill = "Smoke Level (Theme)"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.text = element_text(size = 10, face = "bold"),
+    legend.title = element_text(face = "bold"),
+    legend.position = "right"
+  )
+
+
+```
+
