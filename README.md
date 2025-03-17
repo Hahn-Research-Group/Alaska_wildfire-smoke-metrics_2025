@@ -58,20 +58,16 @@ Department of Labor and Workforce Development](https://live.laborstats.alaska.go
 Housed externally from the repo are the following sources used in the present code: 
 
 **[Alaska Wildfire Number of Fires and Acres Burned Since 1950](https://fire.ak.blm.gov/content/aicc/Statistics%20Directory/Alaska%20Fire%20History%20Chart.pdf)**
-
 - This chart from the [Alaska Interagency Coordination Center](https://fire.ak.blm.gov/) contains yearly burned acreage for the state of Alaska since 1950.
   
 **[2020 State-Level CDC Social Vulnerability Index (SVI) by Census Tract dataset](https://www.atsdr.cdc.gov/place-health/php/svi/svi-data-documentation-download.html)**
-
--The CDC SVI is a composite dataset derived from variables sourced from the Behavioral Risk Factor Surveillance System (BRFSS), the U.S. Census, and the ACS 5-Year Estimates.
+- The CDC SVI is a composite dataset derived from variables sourced from the Behavioral Risk Factor Surveillance System (BRFSS), the U.S. Census, and the ACS 5-Year Estimates.
 
 **[2024 CDC PLACES Dataset](https://www.atsdr.cdc.gov/place-health/php/svi/svi-data-documentation-download.html)**
-
--This composite dataset includes Census Tract-level model-based estimates generated using 2021–2022 BRFSS data, 2020 Census population data, and ACS 2018–2022 estimates. The 2024 release was selected to align with the 2020 Census geographic boundaries, marking the first release to do so.
+- This composite dataset includes Census Tract-level model-based estimates generated using 2021–2022 BRFSS data, 2020 Census population data, and ACS 2018–2022 estimates. The 2024 release was selected to align with the 2020 Census geographic boundaries, marking the first release to do so.
 
 ### Other Sources
-
--US Census Bureau American Community Survey (ACS) 5-Year Estimates were accessed via the Census API using the R package <i> [tidycensus](https://walker-data.com/tidycensus/) </i>.
+- US Census Bureau American Community Survey (ACS) 5-Year Estimates were accessed via the Census API using the R package <i> [tidycensus](https://walker-data.com/tidycensus/) </i>.
 
 ## Scripts
 
