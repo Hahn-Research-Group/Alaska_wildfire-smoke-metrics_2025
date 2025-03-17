@@ -26,9 +26,17 @@ Using the dataset of smoke PM2.5 values by census tract, we then calculated seve
 6. Number of smoke waves
 7. Maximum length of smoke wave
 
-These metrics were derived to measure the frequency, duration, and concentration of long-term exposure to smoke PM2.5
+These metrics were derived to measure the frequency, duration, and concentration of long-term exposure to smoke PM2.5.
 
 ### Person-Days Calculations
+
+Person-days is a metric for quantifying population health impacts of wildfire smoke that combines the spatial distribution of the hazard with population distribution. The dataset of daily average WFS PM2.5 values by census tract was classified using the EPA's Air Quality Index standards for PM2.5:
+
+* Good AQI: PM2.5 levels 0.0–9.0 µg/m³, minimal health risk.
+* Unhealthy for Sensitive Groups AQI: PM2.5 levels 9.1–35.4 µg/m³, moderate health risk, especially for sensitive groups.
+* Unhealthy and higher AQI: PM2.5 levels >35.5 µg/m³, substantial health risks.
+
+Unhealthy for Sensitive Groups AQI days were classified as Medium smoke density days, and Unhealthy and higher AQI level days were classified as Heavy smoke density days. For each census tract and day, we calculated person-days for each exposure level by multiplying each census tract’s population (TOTALPOP) by each level’s indicator variable.The dataset was structured to include daily person-days calculations by smoke density levels, which were then aggregated by year and exposure category to allow for temporal and spatial trend analyses.
 
 ### Wildfire Smoke Social Vulnerability Index 
 
@@ -61,4 +69,3 @@ Available in the **/scripts/** folder are the following files:
 - **10. max_length_smoke_wave_maps.ipynb** - Maps 'Maximum length of smoke wave'
 - **11. Population Person-Days.rmd** - Calculates person-days, assigns categorical level of exposure
 - **12. High PM Tract Census Demographics and SVI.rmd** - Creates Wildfire Smoke Social Vulnerability Index and identifies + bivariate maps High PM and High WSSVI tracts
-- **13. PM_Methods_Stats.r** - Produces prevalence rates of WSSVI metrics of High PM tracts in table form and identifies annual first and last weeks of Medium and Heavy smoke exposure by month
