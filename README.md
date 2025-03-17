@@ -36,9 +36,10 @@ Person-days is a metric for quantifying population health impacts of wildfire sm
 * Unhealthy for Sensitive Groups AQI: PM2.5 levels 9.1–35.4 µg/m³, moderate health risk, especially for sensitive groups.
 * Unhealthy and higher AQI: PM2.5 levels >35.5 µg/m³, substantial health risks.
 
-Unhealthy for Sensitive Groups AQI days were classified as Medium smoke density days, and Unhealthy and higher AQI level days were classified as Heavy smoke density days. For each census tract and day, we calculated person-days for each exposure level by multiplying each census tract’s population by each level’s indicator variable.The dataset was structured to include daily person-days calculations by smoke density levels, which were then aggregated by year and exposure category to allow for temporal and spatial trend analyses.
+Unhealthy for Sensitive Groups AQI days were classified as Medium smoke density days, and Unhealthy and higher AQI level days were classified as Heavy smoke density days. For each census tract and day, we calculated person-days for each exposure level by multiplying each census tract’s population by each level’s indicator variable. The dataset was structured to include daily person-days calculations by smoke density levels, which were then aggregated by year and exposure category to allow for temporal and spatial trend analyses.
 
 ### Wildfire Smoke Social Vulnerability Index 
+A wildfire smoke-specific Social Vulnerability Index was constructed using a number of population-based data sources (see Linked Data Sources and Other Sources). An Outdoor Workers variable was constructed using ACS 5-Year estimates and used with other selected variables. Two subindices, Sensitivity and Adaptive Capacity, were created by thematically grouping selected variables. WSSVI ranks were calculated from the subindices for Census tracts as well as ranks by the number of days each tract experienced above 9µg/m³ during the study period. Tracts were visualized both in a bivariate quadrant map (PM and WSSVI) as well as geographically. A bivariate map for the state of Alaska was generated, as well as maps specific to the municipalities of Anchorage and Fairbanks due to the extreme variation in Census tract size as a result of Alaska's spatially large and population-sparse distributions. These 3 maps were later arranged and finished/finalized using the freeware vector imaging software <i>[Inkscape](https://inkscape.org/)</i>. Finally, the WSSVI Sensitivity and Adaptive Capacity subindice variables (see code for methodology) were stratified by high smoke Census tracts (Census tracts within the top 50% ranking of unhealthy levels of smoke exposure) and low smoke tracts (tracts within the lower 50% ranking of unhealthy levels of smoke exposure). The averages of these proportions were then compared between each group.
 
 ## Data
 
@@ -64,7 +65,7 @@ Housed externally from the repo are the following sources used in the present co
 - The CDC SVI is a composite dataset derived from variables sourced from the Behavioral Risk Factor Surveillance System (BRFSS), the U.S. Census, and the ACS 5-Year Estimates.
 
 **[2024 CDC PLACES Dataset](https://www.atsdr.cdc.gov/place-health/php/svi/svi-data-documentation-download.html)**
-- This composite dataset includes Census Tract-level model-based estimates generated using 2021–2022 BRFSS data, 2020 Census population data, and ACS 2018–2022 estimates. The 2024 release was selected to align with the 2020 Census geographic boundaries, marking the first release to do so.
+- This composite dataset includes Census Tract-level model-based estimates generated using 2021–2022 BRFSS data, 2020 Census population data, and ACS 2018–2022 estimates. The 2024 release was selected to align with the 2020 Census geographic boundaries.
 
 ### Other Sources
 - US Census Bureau American Community Survey (ACS) 5-Year Estimates were accessed via the Census API using the R package <i> [tidycensus](https://walker-data.com/tidycensus/) </i>.
