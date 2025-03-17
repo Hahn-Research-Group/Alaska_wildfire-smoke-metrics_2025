@@ -36,7 +36,7 @@ Person-days is a metric for quantifying population health impacts of wildfire sm
 * Unhealthy for Sensitive Groups AQI: PM2.5 levels 9.1–35.4 µg/m³, moderate health risk, especially for sensitive groups.
 * Unhealthy and higher AQI: PM2.5 levels >35.5 µg/m³, substantial health risks.
 
-Unhealthy for Sensitive Groups AQI days were classified as Medium smoke density days, and Unhealthy and higher AQI level days were classified as Heavy smoke density days. For each census tract and day, we calculated person-days for each exposure level by multiplying each census tract’s population (TOTALPOP) by each level’s indicator variable.The dataset was structured to include daily person-days calculations by smoke density levels, which were then aggregated by year and exposure category to allow for temporal and spatial trend analyses.
+Unhealthy for Sensitive Groups AQI days were classified as Medium smoke density days, and Unhealthy and higher AQI level days were classified as Heavy smoke density days. For each census tract and day, we calculated person-days for each exposure level by multiplying each census tract’s population by each level’s indicator variable.The dataset was structured to include daily person-days calculations by smoke density levels, which were then aggregated by year and exposure category to allow for temporal and spatial trend analyses.
 
 ### Wildfire Smoke Social Vulnerability Index 
 
@@ -53,6 +53,10 @@ Department of Labor and Workforce Development](https://live.laborstats.alaska.go
 **/Wildfire Smoke PM2.5/**
 - This folder contains 90 netCDF files with raw GEOS-Chem modeled PM2.5 data attributed to wildfire smoke during the wildfire season (May–September)
 
+
+### Linked Data Sources
+**[Alaska Wildfire Number of Fires and Acres Burned Since 1950](https://fire.ak.blm.gov/content/aicc/Statistics%20Directory/Alaska%20Fire%20History%20Chart.pdf)**
+- This chart from the Alaska Interagency Coordination Center contains yearly burned acreage for the state of Alaska since 1950.
 
 ## Scripts
 
