@@ -1,17 +1,13 @@
 # 9. max_length_smoke_wave.R
 
+# Load packages
+library(here)
+library(tidyverse)
+
 # Set up working directory and here() paths
 setwd(here::here())
 here::i_am("Scripts/9. max_length_smoke_wave.R")
 knitr::opts_knit$set(root.dir = here::here())
-
-# Load packages
-library(chron)
-library(here)
-library(tidyverse)
-library(dplyr)
-library(readr)
-library(tidyr)
 
 # Load Raw WFS PM2.5 tract averages
 PM25_by_Tracts_WFS <- read.csv(here("Output/Daily_Average_WFS_PM25_by_Census_Tract.csv"))

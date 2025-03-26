@@ -1,19 +1,18 @@
 # 1. average_by_tract.R
 
+# Load packages
+library(here)
+library(tidyverse)
+library(ncdf4)
+library(sf)
+library(terra)
+library(exactextractr)
+
 # Set up working directory and here() paths
 setwd(here::here())
 here::i_am("Scripts/1. average_by_tract.R")
 knitr::opts_knit$set(root.dir = here::here())
 
-# Load packages
-library(ncdf4)
-library(raster)
-library(chron)
-library(sf)
-library(here)
-library(tidyverse)
-library(terra)
-library(exactextractr)
 
 # Load files
 directory_WFS <- here("Raw_Data/Wildfire Smoke PM2.5")
