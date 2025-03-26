@@ -1,5 +1,7 @@
 # 1. average_by_tract.R
 
+# Set up working directory and here() paths
+setwd(here::here())
 here::i_am("Scripts/1. average_by_tract.R")
 knitr::opts_knit$set(root.dir = here::here())
 

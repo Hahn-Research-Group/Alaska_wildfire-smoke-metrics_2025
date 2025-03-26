@@ -1,5 +1,7 @@
 # 9. max_length_smoke_wave.R
 
+# Set up working directory and here() paths
+setwd(here::here())
 here::i_am("Scripts/9. max_length_smoke_wave.R")
 knitr::opts_knit$set(root.dir = here::here())
 

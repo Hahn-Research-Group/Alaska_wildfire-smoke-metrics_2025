@@ -1,5 +1,7 @@
 # 7. number_smoke_waves.R
 
+# Set up working directory and here() paths
+setwd(here::here())
 here::i_am("Scripts/7. number_smoke_waves.R")
 knitr::opts_knit$set(root.dir = here::here())
 
