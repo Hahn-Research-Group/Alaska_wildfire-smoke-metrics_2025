@@ -1,6 +1,6 @@
 # 1. average_by_tract.R
 
-here::i_am("Wildfire_Smoke/Scripts/1. average_by_tract.R")
+here::i_am("Scripts/1. average_by_tract.R")
 knitr::opts_knit$set(root.dir = here::here())
 
 # Load packages
@@ -14,14 +14,14 @@ library(terra)
 library(exactextractr)
 
 # Load files
-directory_WFS <- here("Wildfire_Smoke", "Raw_Data", "Wildfire Smoke PM2.5")
+directory_WFS <- here("Raw_Data/Wildfire Smoke PM2.5")
   nc_files_WFS <- list.files(directory_WFS, full.names = TRUE) # WFS Files
 
-directory_Total <- here("Wildfire_Smoke", "Raw_Data", "Total PM2.5")
+directory_Total <- here("Raw_Data/Total PM2.5")
   nc_files_Total <- list.files(directory_Total, full.names = TRUE) # Total PM Files  
 
 # Cut up projection of Alaska Tracts to remove eastern portion
-path_tracts_2020 <- here("Wildfire_Smoke", "Raw_Data", "Shapefiles", "Tracts2020.shp")
+path_tracts_2020 <- here("Raw_Data/Shapefiles/Tracts2020.shp")
   Tracts2020 <- st_read(path_tracts_2020)
   Tracts2020 <- st_transform(Tracts2020, crs = "EPSG:4326") # Reproject to WFS 84
 
@@ -204,5 +204,5 @@ PM25_by_Tracts_WFS <- PM25_by_Tracts_WFS_extended %>%
 tail(PM25_by_Tracts_WFS)
 
 # Export
-write.csv(PM25_by_Tracts_WFS, file = here("Wildfire_Smoke", "Output", "Daily_Average_WFS_PM25_by_Census_Tract.csv") , row.names = FALSE)
-write.csv(PM25_by_Tracts_Total, file = here("Wildfire_Smoke", "Output", "Daily_Average_Total_PM25_by_Census_Tract.csv") , row.names = FALSE)
+write.csv(PM25_by_Tracts_WFS, file = here("Output/Daily_Average_WFS_PM25_by_Census_Tract.csv") , row.names = FALSE)
+write.csv(PM25_by_Tracts_Total, file = here("Output/Daily_Average_Total_PM25_by_Census_Tract.csv") , row.names = FALSE)

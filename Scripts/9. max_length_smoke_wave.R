@@ -1,6 +1,6 @@
 # 9. max_length_smoke_wave.R
 
-here::i_am("Wildfire_Smoke/Scripts/9. max_length_smoke_wave.R")
+here::i_am("Scripts/9. max_length_smoke_wave.R")
 knitr::opts_knit$set(root.dir = here::here())
 
 # Load packages
@@ -12,7 +12,7 @@ library(readr)
 library(tidyr)
 
 # Load Raw WFS PM2.5 tract averages
-PM25_by_Tracts_WFS <- read.csv(here("Wildfire_Smoke/Output/Daily_Average_WFS_PM25_by_Census_Tract.csv"))
+PM25_by_Tracts_WFS <- read.csv(here("Output/Daily_Average_WFS_PM25_by_Census_Tract.csv"))
 PM25_by_Tracts_WFS$Date <- as.Date(PM25_by_Tracts_WFS$Date)
 PM25_by_Tracts_WFS$Year <- as.numeric(format(PM25_by_Tracts_WFS$Date,'%Y'))
 
@@ -135,7 +135,7 @@ longest_smoke_waves_per_name <- Longest_Smoke_Waves_Complete %>%
 head(longest_smoke_waves_per_name)
 
 # Export
-path <- here("Wildfire_Smoke/Output/WFS_M5_smoke_wave_annual.csv")
+path <- here("Output/WFS_M5_smoke_wave_annual.csv")
   write_csv(Longest_Smoke_Waves_Complete, path)
-path <- here("Wildfire_Smoke/Output/WFS_M5_smoke_wave_max_length.csv")
+path <- here("Output/WFS_M5_smoke_wave_max_length.csv")
   write_csv(longest_smoke_waves_per_name, path)
