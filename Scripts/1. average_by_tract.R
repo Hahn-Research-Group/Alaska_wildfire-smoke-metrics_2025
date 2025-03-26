@@ -20,6 +20,11 @@ directory_WFS <- here("Raw_Data/Wildfire Smoke PM2.5")
 directory_Total <- here("Raw_Data/Total PM2.5")
   nc_files_Total <- list.files(directory_Total, full.names = TRUE) # Total PM Files  
 
+# Create an 'Output' folder
+  if (!dir.exists("Output")) {
+    dir.create("Output")
+  }
+  
 # Cut up projection of Alaska Tracts to remove eastern portion
 path_tracts_2020 <- here("Raw_Data/Shapefiles/Tracts2020.shp")
   Tracts2020 <- st_read(path_tracts_2020)
