@@ -3,12 +3,10 @@
 ### Version: 03/16/2025
 
 ## Background
+This repository provides R and Python code that was used for analysis of a longitudinal wildfire smoke dataset created for Alaska for May-September of 2003 to 2020 in order to assess seasonal and long-term population exposure to wildfire smoke and identify geospatial subdivisions and demographic groups that are most vulnerable to the population health impacts of wildfire smoke events. The findings of these analyses are available here: (Update link after publication).
 
-This repository provides R and Python code that was used for analysis of a longitudinal wildfire smoke dataset created for the state of Alaska for May-September of 2003 to 2020 in order to assess seasonal and long-term population exposure to wildfire smoke and identify geospatial subdivisions and demographic groups that are most vulnerable to the population health impacts of wildfire smoke events. The findings of these analyses are available here: (Update link after publication).
-
-## Methods
-
-This was a descriptive ecological study that quantified population exposure to wildfire smoke in Alaska and created a wildfire smoke-specific social vulnerability index for Census tract-level bivariate mapping. Wildfire-specific fine particulate matter (PM2.5) exposure estimates were generated aggregated to the census tract level for 2003-2020. Census tract information was obtained from the Alaska Department of Labor and Statistics. Next, we calculated the frequency and duration of smoke waves, person-days of exposure to medium and heavy smoke based on EPA AQI classification of "Unhealthy for Sensitive Groups" and "Unhealthy", and census tract-level wildfire smoke-specific social vulnerability rankings. 
+## Methods Overview
+This was a descriptive ecological study that quantified population exposure to wildfire smoke in Alaska and created a wildfire smoke-specific social vulnerability index for census tract-level bivariate mapping. We used the GEOS-Chem model to estimate daily wildfires-specific PM2.5 from 2003-2020. We aggregated these data to the census tract level. We categorized continuous PM2.5 concentrations based on EPA AQI classification of "Unhealthy for Sensitive Groups" and "Unhealthy." Finally, we calculated wildfire smoke metrics and the social vulnerability rankings and visualized the results.
 
 ### PM2.5 Concentration Averaging through Zonal Statistics
 To accurately average smoke PM2.5 concentrations, we began by processing raw modeled data produced from our GEOS-Chem model. The model outputs smoke PM2.5 concentrations in a large set of NetCDF (Network Common Data Form) files. NetCDF is a platform-independent data format that efficiently stores and organizes large, multidimensional scientific data. Each NetCDF file contains geospatial and temporal data to store PM2.5 values in a large grid across Alaska, for each day from 2003 to 2020.
@@ -18,18 +16,18 @@ The first step in the averaging process involved applying zonal statistics to th
 ### Wildfire Smoke Metrics
 Using the dataset of smoke PM2.5 values by census tract, we then calculated several wildfire smoke metrics:
 
-1. Mean daily wildfire PM2.5 concentration during wildfire season
-2. Annual mean daily wildfire PM2.5 concentration
-3. Mean daily wildfire PM2.5 concentration on 10 days with highest PM2.5 concentration each year
-4. Number of days with medium wildfire smoke density or worse
-5. Number of days with heavy wildfire smoke density
-6. Number of smoke waves
-7. Maximum length of smoke wave
+1. Person-days of smoke exposure
+2. Mean daily wildfire PM2.5 concentration during wildfire season
+3. Annual mean daily wildfire PM2.5 concentration
+4. Mean daily wildfire PM2.5 concentration on 10 days with highest PM2.5 concentration each year
+5. Number of days with medium wildfire smoke density or worse
+6. Number of days with heavy wildfire smoke density
+7. Number of smoke waves
+8. Maximum length of smoke wave
 
 These metrics were derived to measure the frequency, duration, and concentration of long-term exposure to smoke PM2.5.
 
 ### Person-Days Calculations
-
 Person-days is a metric for quantifying population health impacts of wildfire smoke that combines the spatial distribution of the hazard with population distribution. The dataset of daily average WFS PM2.5 values by census tract was classified using the EPA's Air Quality Index standards for PM2.5:
 
 * Good AQI: PM2.5 levels 0.0–9.0 µg/m³, minimal health risk.
@@ -42,7 +40,6 @@ Unhealthy for Sensitive Groups AQI days were classified as Medium smoke density 
 A wildfire smoke-specific Social Vulnerability Index was constructed using a number of population-based data sources (see Linked Data Sources and Other Sources). An Outdoor Workers variable was constructed using ACS 5-Year estimates and used with other selected variables. Two subindices, Sensitivity and Adaptive Capacity, were created by thematically grouping selected variables. WSSVI ranks were calculated from the subindices for Census tracts as well as ranks by the number of days each tract experienced above 9µg/m³ during the study period. Tracts were visualized both in a bivariate quadrant map (PM and WSSVI) as well as geographically. A bivariate map for the state of Alaska was generated, as well as maps specific to the municipalities of Anchorage and Fairbanks due to the extreme variation in Census tract size as a result of Alaska's spatially large and population-sparse distributions. These 3 maps were later arranged and finished/finalized using the freeware vector imaging software <i>[Inkscape](https://inkscape.org/)</i>. Finally, the WSSVI Sensitivity and Adaptive Capacity subindice variables (see code for methodology) were stratified by high smoke Census tracts (Census tracts within the top 50% ranking of unhealthy levels of smoke exposure) and low smoke tracts (tracts within the lower 50% ranking of unhealthy levels of smoke exposure). The averages of these proportions were then compared between each group.
 
 ## Data
-
 Available in the **/raw_data/** folder are the following subfolders and files:
 **/Shapefiles/**
 - **Tracts2020.dbf, Tracts2020.prj, Tracts2020.sbn, Tracts2020.sbx, Tracts2020.shp, Tracts2020.shp, Tracts2020.shx** - These files form the Alaska Census Tract Boundaries shapefile from the [Alaska 
