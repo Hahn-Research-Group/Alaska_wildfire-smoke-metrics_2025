@@ -1,4 +1,4 @@
-# Metrics for assessing the population health impact of wildfire smoke in Alaska
+# Advancing wildfire smoke exposure metrics to bridge public health, climate adaptation, and fire management decision-making in Alaska
 ### Created by: Melissa Bradley, Nelsha Athauda
 ### Version: 03/16/2025
 
