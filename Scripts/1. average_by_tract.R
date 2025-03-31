@@ -1,21 +1,21 @@
 # 1. average_by_tract.R
 
-# Load packages
-library(here)
-library(tidyverse)
-library(ncdf4)
-library(sf)
-library(terra)
-library(exactextractr)
+# Load required packages 
+packages <- c("here", "tidyverse", "ncdf4", "sf", "terra", "exactextractr")
+lapply(packages, function(pkg) {
+  if (!require(pkg, character.only = TRUE)) install.packages(pkg)
+  library(pkg, character.only = TRUE)
+})
 
-# Set up working directory and here() paths
+# Set working directory manually if i_am() is unable to find the file, for example:
+# setwd("C:/Users/username/Alaska_wildfire-smoke-metrics_2025/Scripts")
+
 setwd(here::here())
 here::i_am("Scripts/1. average_by_tract.R")
 knitr::opts_knit$set(root.dir = here::here())
 
-
 # Load files
-directory_WFS <- here("Raw_Data/Wildfire Smoke PM2.5")
+directory_WFS <- here::here("Raw_Data/Wildfire Smoke PM2.5")
   nc_files_WFS <- list.files(directory_WFS, full.names = TRUE) # WFS Files
 
 directory_Total <- here("Raw_Data/Total PM2.5")

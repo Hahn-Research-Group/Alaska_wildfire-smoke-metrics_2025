@@ -4,6 +4,9 @@
 library(here)
 library(tidyverse)
 
+# Set working directory manually if i_am() is unable to find the file, for example:
+# setwd("C:/Users/username/Alaska_wildfire-smoke-metrics_2025/Scripts")
+
 # Set up working directory and here() paths
 setwd(here::here())
 here::i_am("Scripts/9. max_length_smoke_wave.R")
