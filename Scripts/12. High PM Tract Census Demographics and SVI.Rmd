@@ -622,7 +622,7 @@ legend <- bi_legend(
   pal = "PurpleOr",          # Same palette as the map
   dim = 3,                 # Same dimensions as the map
   xlab = "Higher PM Exposure", # X-axis label
-  ylab = "Higher SVI Score",   # Y-axis label
+  ylab = "Higher WSSVI Score",   # Y-axis label
   size = 8                 # Font size for labels
 )
 
