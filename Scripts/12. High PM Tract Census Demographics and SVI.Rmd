@@ -1,5 +1,5 @@
 ---
-title: "WSVI of High Wildfire PM Exposure Tracts and Population-Weighted Mean PMs"
+title: "WSSVI of High Wildfire PM Exposure Tracts and Demographic Distribution of High Smoke/Low Smoke Tracts"
 author: "Melissa Bradley"
 date: "`r Sys.Date()`"
 output: 
@@ -22,14 +22,9 @@ library(sf)           # For use w/ GIS data
 library(tigris)       # Pulls AK shapefile
 library(scales)       # Plot Formatting
 library(here)         # Parent directories
-library(gridExtra)    # Arrange plots
+library(gridExtra)    # Plot Arrangement (Plot Color Arrangement)
 library(biscale)      # Bivariate plots
-library(kableExtra)   # Kable tables
-library(psych)        # For PCA, KMO, Bartlett’s test
-library(GPArotation)  # For varimax rotation
-library(factoextra)   # For scree plot & PCA visualization
-library(nFactors)     # For parallel analysis
-library(spdep)        # For Moran’s I
+library(cowplot)      # ggplot layers
 
 knitr::opts_knit$set(root.dir = here::here())
 here::i_am("OneDrive Files/5. Population Exposure/Scripts/2. High PM Tract Census Demographics and SVI.Rmd")
@@ -43,10 +38,12 @@ acs_2020_vars <- load_variables(2020,             # Year
 
 # Purpose
 
+This exploratory analysis identifies Alaskan communities most vulnerable to wildfire smoke exposure, using a composite vulnerability index and air quality data from 2003–2020.
+
 This document details methods used to calculate and visualize:
 
-* Ranks and summary statistics for top 50% of Census Tracts in a Wildfire-specific Social Vulnerability Index (modeled after Jung et al., 2024) + top 50% of tracts of # of PM days above 9µg/m³
-* WSVI demographic percentage distributions of high smoke (>=50% PM rank) and low smoke (>50% PM rank) Census tracts.
+* Ranks and summary statistics for Census tracts in the top 50% of wildfire-specific fine particulate matter (PM) exposure and the Wildfire Smoke-Specific Social Vulnerability Index (WSVI), based on methods adapted from Jung et al. (2024).
+* WSSVI demographic percentage distributions of high smoke (>=50% PM rank) and low smoke (>50% PM rank) Census tracts.
 
 # Data Sources
 
@@ -198,9 +195,9 @@ Two community health vulnerability sub-indices, Sensitivity and Adaptive Capacit
   - Single-Parent Households (CDC SVI/ACS)
   - English Language Proficiency (CDC SVI/ACS)
 
-A composite rank was created from these two themes, resulting in a single Wildfire-Specific Social Vulnerability Index (WSVI).
+A composite rank was created from these two themes, resulting in a single Wildfire Smoke-Specific Social Vulnerability Index (WSSVI).
 
-Note: In this analysis, occupation data from the ACS (`C24010` codes) were classified into **Outdoor** and **Non-Outdoor** categories based on the nature of the work. This classification is used to assess potential exposure to environmental factors, including wildfire PM.
+Occupation data from the ACS (`C24010` codes) were classified into **Outdoor** and **Non-Outdoor** categories based on the nature of the work. 
 
 - **Outdoor Occupations**: These involve significant outdoor work or physical labor, including natural resources, construction, and maintenance roles.
   - **Natural Resources, Construction, and Maintenance**: Farming, fishing, forestry, construction, and maintenance work.
@@ -214,7 +211,6 @@ Note: In this analysis, occupation data from the ACS (`C24010` codes) were class
   - **Professional, Scientific, and Technical Services**: Scientific, legal, and educational roles.
   
 Census tracts with data source population estimates of 25 or less were excluded from this analysis (n = 1) due to potential unreliability of estimates, leaving a total of 175 tracts.
-
 
 ```{r tidying, results = 'hide', cache = FALSE}
 
@@ -324,12 +320,12 @@ census_svi_final <- census_svi_final %>%
 
 ```
 
-# WSVI and PM Tract Ranks
+# WSSVI and PM Tract Ranks
 
 ## Rank ID and Visualization
 
 We next ranked Census tracts by the number of PM days over 9µg/m³, as well 
-as ranking them by Wildfire Social Vulnerability Index scores in Themes 1 and 2. PM ranks were
+as ranking them by Wildfire Smoke Social Vulnerability Index scores in Themes 1 and 2. PM ranks were
 normalized to a 0.0-0.1 scale to align with the CDC 0.0-0.1 SVI scale normalization
 for plotting.
 
@@ -339,7 +335,7 @@ for plotting.
 dense_rank() assigns the same rank for Census tracts with the same number of PM 
 days over 9µg/m³. We plotted the top 50% of tracts and all tracts in two different
 plots: one highlighting the >50% WSVI and >50% Wildfire PM ranks in red and grey,
-and another in gradients of purple and orange.
+and another in gradients of purple and orange. The latter plot was included in the final manuscript.
 
 ```{r svi tidy}
 
@@ -358,7 +354,7 @@ pm_census_with_svi_rank <- census_svi_final %>%
   inner_join(pm_by_tract, by = "NAME") %>%
   mutate(
     # composite_svi_rank = (rpl_theme1 + rpl_theme2) / 2,  # Composite SVI rank
-    highlight = ifelse(pm_normalized_rank >= 0.5 & composite_svi_rank >= 0.5, "High Smoke Exposure + High Wildfire Social Vulnerability", "Other")
+    highlight = ifelse(pm_normalized_rank >= 0.5 & composite_svi_rank >= 0.5, "High Smoke Exposure + High Wildfire Smoke Social Vulnerability", "Other")
   )
 
 ```
@@ -370,7 +366,7 @@ pm_census_with_svi_rank <- census_svi_final %>%
 ```{r red gray all, echo = F, warning=F, quiet = TRUE, fig.width=11, fig.height=8, dpi=300}
 
 # Filter for highlighted communities
-highlighted <- pm_census_with_svi_rank[pm_census_with_svi_rank$highlight == "High Smoke Exposure + High Social Vulnerability", ]
+highlighted <- pm_census_with_svi_rank[pm_census_with_svi_rank$highlight == "High Smoke Exposure + High Wildfire Smoke Social Vulnerability", ]
 
 # Dynamically scale padding and text size based on aspect ratio
 fig_width <- 14  # Set to match your chunk's fig.width
@@ -382,7 +378,7 @@ High_PM_High_SVI_RedGray <- ggplot(pm_census_with_svi_rank, aes(x = pm_normalize
   
   # Red labels for highlighted points
   geom_text_repel(
-    data = pm_census_with_svi_rank %>% filter(highlight == "High Smoke Exposure + High Social Vulnerability"),
+    data = pm_census_with_svi_rank %>% filter(highlight == "High Smoke Exposure + High Wildfire Smoke Social Vulnerability"),
     aes(label = NAME),
     size = 3 / aspect_ratio,
     color = "red", 
@@ -395,7 +391,7 @@ High_PM_High_SVI_RedGray <- ggplot(pm_census_with_svi_rank, aes(x = pm_normalize
   
   # Grey labels for non-highlighted points
   geom_text_repel(
-    data = pm_census_with_svi_rank %>% filter(highlight != "High Smoke Exposure + High Social Vulnerability"),
+    data = pm_census_with_svi_rank %>% filter(highlight != "High Smoke Exposure + High Wildfire Smoke Social Vulnerability"),
     aes(label = NAME),
     size = 2.5 / aspect_ratio,
     color = "grey35", 
@@ -408,11 +404,11 @@ High_PM_High_SVI_RedGray <- ggplot(pm_census_with_svi_rank, aes(x = pm_normalize
   
   geom_vline(xintercept = 0.5, linetype = "dashed", color = "black", alpha = 0.8) +
   geom_hline(yintercept = 0.5, linetype = "dashed", color = "black", alpha = 0.8) +
-  scale_color_manual(values = c("High Smoke Exposure + High Wildfire Social Vulnerability" = "red", "Other" = "grey35")) +
+  scale_color_manual(values = c("High Smoke Exposure + High Wildfire Smoke Social Vulnerability" = "red", "Other" = "grey35")) +
   labs(
-    x = "Wildfire Smoke Exposure Rank",
-    y = "Wildfire Social Vulnerability Rank", 
-    title = "High PM + High WSVI Communities in Alaska"
+    x = "Wildfire Smoke Exposure Ranking",
+    y = "Wildfire Smoke Social Vulnerability Index Ranking", 
+    title = "High PM + High WSSVI Communities in Alaska"
   ) +
   theme_minimal(base_size = 14) +
   theme(
@@ -493,9 +489,9 @@ High_PM_High_SVI_Colors <- ggplot() +
   
   # Labels and titles
   labs(
-    x = "Wildfire Smoke Exposure Rank",
-    y = "Wildfire Social Vulnerability Rank",
-    title = "High PM + High WFSSVI Census Tracts in Alaska"
+    x = "Wildfire Smoke Exposure Ranking",
+    y = "Wildfire Smoke Social Vulnerability Index Ranking", 
+    # title = "High PM + High WFSSVI Census Tracts in Alaska"
   ) +
   
   # Theme adjustments
@@ -511,14 +507,14 @@ High_PM_High_SVI_Colors
 
 
 ggsave("High_PM_High_SVI_Colors.png", plot = High_PM_High_SVI_Colors, 
-        width = 12, height = 8, dpi = 300, units = "in")
+        width = 12, height = 8, dpi = 600, units = "in")
 
 ```
 
 
-## Demographic Summary of High SVI + High PM AK Census Tracts
+## Demographic Summary of High WSSVI + High PM AK Census Tracts
 
-The following summary provides insights into key population characteristics for Alaska's census tracts identified as having both high wildfire social vulnerability and high wildfire PM exposure:
+The following are demographic proportions of Alaskan census tracts having both high wildfire smoke social vulnerability and high wildfire PM2.5 exposure:
 
 ```{r high_svi_pm_tidy}
 
@@ -569,7 +565,7 @@ demographics_summary <- high_pm_census %>%
 
 ### Population and Distribution
 
-The selected census tracts represent **`r round(percent_pop, 2)`%** of Alaska's total population. Within these tracts, the population size varies widely, ranging from **`r pop_range[1]`** to **`r pop_range[2]`** individuals per tract.
+The selected census tracts represent **`r round(percent_pop, 2)`%** of Alaska's total population. Within these tracts the population size ranges from **`r pop_range[1]`** to **`r pop_range[2]`** individuals per tract.
 
 ### Key Demographic Characteristics
 
@@ -583,7 +579,7 @@ The selected census tracts represent **`r round(percent_pop, 2)`%** of Alaska's 
 
 ## Bivariate Map
 
-A bivariate map was then created of wildfire smoke exposure and WFSVI by Census tract. Due to the strong variability in Alaskan Census tract size, separate vectors were created of all Census tracts in the Anchorage Borough and for Census tracts in the Fairbanks North Star Borough. 
+A bivariate map was then created of wildfire smoke exposure and WFSVI by Census tract. Due to the strong variability in Alaskan Census tract size, separate vector graphics were created of all Census tracts in the Anchorage Borough and for Census tracts in the Fairbanks North Star Borough. These two graphics were then arranged with the larger bivariate map as borough pop-outs in the vector graphics editor <i> Inkscape </i>.   
 
 ```{r geospatial svi, echo = F, warning = F, quiet = TRUE, fig.width=11, fig.height=8, dpi=300}
 
@@ -642,8 +638,6 @@ ggsave("Bivariate_Map.png", plot = final_plot,
         width = 1700, height = 830, dpi = 300, units = "px")
 
 ```
-
-
 
 ```{r fairbank anch maps}
 #-------------------------
@@ -852,3 +846,15 @@ ggplot(hist_data, aes(x = PM_Category, y = Percentage, fill = Theme_PM)) +
 
 ```
 
+## Distribution Table (Values)
+
+```{r distribution table}
+
+summary_table <- hist_data %>%
+  group_by(PM_Category, Demographic) %>%
+  summarise(Mean_Percentage = round(mean(Percentage, na.rm = TRUE), 1)) %>%
+  pivot_wider(names_from = PM_Category, values_from = Mean_Percentage)
+
+print(summary_table)
+
+```
