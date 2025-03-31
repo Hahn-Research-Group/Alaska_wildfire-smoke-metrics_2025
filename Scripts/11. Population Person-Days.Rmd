@@ -1,5 +1,5 @@
 ---
-title: "11. Population Person-Days"
+title: "1. Population Person-Days"
 author: "Melissa Bradley"
 date: "2024-08-11"
 output: 
@@ -29,7 +29,7 @@ library(DT)          # HTML table rendering (JS DataTables library)
 
 # Purpose
 
-This document details the methods used to calculated and visualize the person-days of exposure to PM2.5 from wildfire smoke (WFS) in each Alaskan census tract, by category.
+This document details the methods used to calculate and visualize the person-days of exposure to PM2.5 from wildfire smoke (WFS) in each Alaskan census tract, by category.
 
 # Data Sources
 
@@ -112,7 +112,9 @@ pm_census <- daily_pm_avg %>%
     Medium = ifelse(PM2.5 > 9 & PM2.5 < 35.4, 1, 0),
     Heavy = ifelse(PM2.5 >= 35.5, 1, 0),
     Any_Smoke = ifelse(PM2.5 >= 2, 1, 0), # Using 2 as cutpoint for Any Smoke here
-    Year = year(Date)
+    Year = year(Date),
+    Month = lubridate::month(Date),  # Extract Month
+    Week = lubridate::isoweek(Date)  # Extract Week Number
   )
 
 # Step 2: Add person-days calculations
@@ -268,7 +270,7 @@ plot_person_days_vs_acres <- function(data, acres_burned, title, y_breaks = NULL
     
     # Labels
     labs(
-      title = str_wrap(title, width = 60),
+      # title = str_wrap(title, width = 60),
       x = "Year"
     )
 }
@@ -720,7 +722,7 @@ plot_facet_grid <- function(data) {
       plot.title = element_text(size = 16, face = "bold", hjust = 0.5)
     ) +
     labs(
-      title = "Alaska Wildfire Smoke Exposures by PM Density - High Acres Burned Years (2003-2020)",
+      # title = "Alaska Wildfire Smoke Exposures by PM Density - High Acres Burned Years (2003-2020)",
       x = "Month",
       y = "Person-Days of Exposure (in Thousands)"
     ) +
@@ -750,7 +752,7 @@ facet_highwf <- plot_facet_grid(pm_census_weekly_high_wf)
 facet_highwf
 
 # Save the final plot
-# ggsave("Grid_PM25_High_WF.png", plot = facet_highwf, dpi = 300, width = 16, height = 10)
+# ggsave("Grid_PM25_High_WF.jpeg", plot = facet_highwf, dpi = 300, width = 16, height = 10)
 
 ```
 
@@ -894,45 +896,50 @@ summary_table <- datatable(
 census_table
 summary_table
 
+```
 
-# # Group by NAME and calculate total person-days for each period
-# pd_first_last <- pm_census %>%
-#   filter(Year %in% c(first_9_years, last_9_years)) %>%
-#   group_by(NAME, Period = ifelse(Year %in% first_9_years, "First 9 Years", "Last 9 Years")) %>%
-#   summarise(Total_PD = sum(Any_Smoke_PD, na.rm = TRUE)) %>%
-#   pivot_wider(names_from = Period, values_from = Total_PD, values_fill = 0) %>%
-#   mutate(
-#     Change = `Last 9 Years` - `First 9 Years`,
-#     Status = ifelse(Change > 0, "Increased", "Decreased")
-#   )
-# 
-# # Summary of the number of census tracts with increased or decreased person-days
-# summary_table <- pd_first_last %>%
-#   group_by(Status) %>%
-#   summarise(Count = n())
-# 
-# # Display the detailed table with DT
-# datatable(
-#   pd_first_last,
-#   caption = "Detailed Census Tracts with Person-Days Change Over Periods",
-#   options = list(
-#     pageLength = 10,
-#     autoWidth = TRUE,
-#     columnDefs = list(
-#       list(className = 'dt-center', targets = "_all") # Center-align all columns
-#     )
-#   )
-# )
-# 
-# # Display the summary table with DT
-# datatable(
-#   summary_table,
-#   caption = "Summary of Census Tracts by Status of Change",
-#   options = list(
-#     pageLength = 5,
-#     autoWidth = TRUE,
-#     dom = 't' # Only display the table (no search, pagination, or other controls)
-#   )
-# )
+# Start and End Dates for Unhealthy Smoke By Year
+
+This code identifies the start and end dates for unhealthy levels of smoke exposure in Alaska for each year in the dataset.
+
+```{r start end dates}
+
+# Step 2: Filter for high wildfire years
+high_wildfire_years <- c(2004, 2005, 2009, 2013, 2015, 2019)
+
+pm_census_filtered <- pm_census %>%
+  filter(Year %in% high_wildfire_years)
+
+# Step 3: Summarize person-days for Medium and Heavy exposure levels
+exposure_summary <- pm_census_filtered %>%
+  select(Year, Month, Week, Medium, Heavy, Any_Smoke) %>%
+  group_by(Year, Month, Week) %>%
+  summarize(
+    Medium_Days = sum(Medium, na.rm = TRUE),
+    Heavy_Days = sum(Heavy, na.rm = TRUE),
+    Any_Days = sum(Any_Smoke, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+start_end_summary <- exposure_summary %>%
+  pivot_longer(cols = c(Any_Days, Medium_Days, Heavy_Days), names_to = "Exposure_Level", values_to = "Days") %>%
+  filter(Days > 0) %>%
+  group_by(Year, Exposure_Level) %>%
+  summarize(
+    start_week = min(Week),
+    end_week = max(Week),
+    .groups = "drop"
+  )
+
+start_end_summary <- start_end_summary %>%
+  mutate(
+    start_date = as.Date(paste(Year, start_week, 1), format = "%Y %U %u"),
+    end_date = as.Date(paste(Year, end_week, 1), format = "%Y %U %u"),
+    start_date = format(start_date, "%m/%d/%Y"),  # Convert to MM/DD/YYYY format
+    end_date = format(end_date, "%m/%d/%Y"),
+    start_month = month(as.Date(paste(Year, start_week, 1), format = "%Y %U %u"), label = TRUE, abbr = FALSE),  # Full month name
+    end_month = month(as.Date(paste(Year, end_week, 1), format = "%Y %U %u"), label = TRUE, abbr = FALSE)   # Full month name
+  )
+print(start_end_summary)
 
 ```
