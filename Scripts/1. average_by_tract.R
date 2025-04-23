@@ -29,10 +29,10 @@ directory_Total <- here("Raw_Data/Total PM2.5")
 # Cut up projection of Alaska Tracts to remove eastern portion
 path_tracts_2020 <- here("Raw_Data/Shapefiles/Tracts2020.shp")
   Tracts2020 <- st_read(path_tracts_2020)
-  Tracts2020 <- st_transform(Tracts2020, crs = "EPSG:4326") # Reproject to WFS 84
+  Tracts2020 <- st_transform(Tracts2020, crs = "EPSG:4326") # Reproject to WGS 84
 
-# Define the extent of the desired area of Alaska (e.g., using bounding box)
-extent <- st_bbox(c(xmin = -180, ymin = 50, xmax = -130, ymax = 72), crs = st_crs(Tracts2020))
+# Define the extent of the desired area of Alaska to match raw data at: 127.5-177.5°W, 47.5-77.5°N
+extent <- st_bbox(c( xmin = -177.5, xmax = -127.5, ymin = 47.5, ymax = 77.5 ), crs = st_crs(Tracts2020))
 
 # Clip the shapefile to the defined extent
 Tracts2020_clipped <- st_crop(Tracts2020, extent)
@@ -212,3 +212,5 @@ tail(PM25_by_Tracts_WFS)
 # Export
 write.csv(PM25_by_Tracts_WFS, file = here("Output/Daily_Average_WFS_PM25_by_Census_Tract.csv") , row.names = FALSE)
 write.csv(PM25_by_Tracts_Total, file = here("Output/Daily_Average_Total_PM25_by_Census_Tract.csv") , row.names = FALSE)
+
+st_write(Tracts2020_clipped, here("Raw_Data/Shapefiles/Tracts2020_Adjusted.shp"))
