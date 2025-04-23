@@ -1,4 +1,4 @@
-# Advancing wildfire smoke exposure metrics to bridge public health, climate adaptation, and fire management decision-making in Alaska
+# Advancing new metrics for wildfire smoke exposure: Case study in Alaska to bridge public health, climate adaptation, and fire management
 ### Created by: Melissa Bradley, Nelsha Athauda
 ### Version: 03/16/2025
 
