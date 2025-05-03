@@ -13,7 +13,7 @@ here::i_am("Scripts/7. number_smoke_waves.R")
 knitr::opts_knit$set(root.dir = here::here())
 
 # Load Raw WFS PM2.5 tract averages
-PM25_by_Tracts_WFS <- read.csv(here("Output/Daily_Average_WFS_PM25_by_Census_Tract.csv"))
+PM25_by_Tracts_WFS <- read.csv(here("Output/Data/Daily_Average_WFS_PM25_by_Census_Tract.csv"))
 PM25_by_Tracts_WFS$Date <- as.Date(PM25_by_Tracts_WFS$Date)
 PM25_by_Tracts_WFS$Year <- as.numeric(format(PM25_by_Tracts_WFS$Date,'%Y'))
 
@@ -102,5 +102,5 @@ WFS_M4 <- WFS_M4[, c("NAME", colnames(WFS_M4)[-c(1, 2)], colnames(WFS_M4)[2])]
 WFS_M4 <- WFS_M4[, !(colnames(WFS_M4) %in% c(".groups.y", ".groups.x"))]
   
 # Export 
-path <- here("Output/WFS_M4_smoke_waves.csv")
+path <- here("Output/Data/number_smoke_waves.csv")
 write_csv(WFS_M4, path)
