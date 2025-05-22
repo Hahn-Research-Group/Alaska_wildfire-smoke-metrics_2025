@@ -55,7 +55,7 @@ Department of Labor and Workforce Development](https://live.laborstats.alaska.go
 
 Housed externally from the repo are the following sources used in the present code: 
 
-**[Alaska Wildfire Number of Fires and Acres Burned Since 1950]([https://fire.ak.blm.gov/content/aicc/Statistics%20Directory/Alaska%20Fire%20History%20Chart.pdf](https://fire.ak.blm.gov/content/aicc/Statistics%20Directory/Fire%20History%20and%20Stats/Alaska%20Fire%20History%20Chart.pdf])**
+**[Alaska Wildfire Number of Fires and Acres Burned Since 1950 (https://fire.ak.blm.gov/content/aicc/Statistics%20Directory/Fire%20History%20and%20Stats/Alaska%20Fire%20History%20Chart.pdf])**
 - This chart from the [Alaska Interagency Coordination Center](https://fire.ak.blm.gov/) contains yearly burned acreage for the state of Alaska since 1950.
   
 **[2020 State-Level CDC Social Vulnerability Index (SVI) by Census Tract dataset](https://www.atsdr.cdc.gov/place-health/php/svi/svi-data-documentation-download.html)**
