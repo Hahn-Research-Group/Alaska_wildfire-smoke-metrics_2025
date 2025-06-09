@@ -25,6 +25,8 @@ library(here)         # Parent directories
 library(gridExtra)    # Plot Arrangement (Plot Color Arrangement)
 library(biscale)      # Bivariate plots
 library(cowplot)      # ggplot layers
+library(broom)        # Statistical summaries
+library(viridis)      # Color maps
 
 knitr::opts_knit$set(root.dir = here::here())
 here::i_am("OneDrive Files/5. Population Exposure/Scripts/2. High PM Tract Census Demographics and SVI.Rmd")
@@ -357,6 +359,9 @@ pm_census_with_svi_rank <- census_svi_final %>%
     highlight = ifelse(pm_normalized_rank >= 0.5 & composite_svi_rank >= 0.5, "High Smoke Exposure + High Wildfire Smoke Social Vulnerability", "Other")
   )
 
+# RDS file for Shiny app
+# saveRDS(pm_census_with_svi_rank, "pm_census_with_svi_rank.RDS")
+
 ```
 
 ## Quadrant Graphs 
@@ -577,12 +582,13 @@ The selected census tracts represent **`r round(percent_pop, 2)`%** of Alaska's 
 - **Individuals with CHD**: `r round(demographics_summary$CHD_CrudePrev, 2)`% of the population are individuals with cardiovascular disease (CHD).
 - **Outdoor Workers**: Outdoor workers make up `r round(demographics_summary$pct_outdoor_jobs, 2)`% of the population, reflecting those involved in natural resources, construction, and other outdoor occupations.
 
-## Bivariate Map
+## Univariate Maps
 
-A bivariate map was then created of wildfire smoke exposure and WFSVI by Census tract. Due to the strong variability in Alaskan Census tract size, separate vector graphics were created of all Census tracts in the Anchorage Borough and for Census tracts in the Fairbanks North Star Borough. These two graphics were then arranged with the larger bivariate map as borough pop-outs in the vector graphics editor <i> Inkscape </i>.   
+Univariate maps of the WSSVI sub-indices—Sensitivity (Theme 1) and Adaptive Capacity (Theme 2)--as well as the overall WSSVI index were created to visualize the spatial distribution of vulnerability scores across Alaskan census tracts. Due to the strong variability in Alaskan Census tract size, separate vector graphics were created of all Census tracts in the Anchorage Borough and for Census tracts in the Fairbanks North Star Borough. These two graphics were then arranged with the larger bivariate maps as borough pop-outs in the vector graphics editor <i> Inkscape </i>. 
 
-```{r geospatial svi, echo = F, warning = F, quiet = TRUE, fig.width=11, fig.height=8, dpi=300}
+### Sensitivity
 
+```{r sensitivity map}
 pm_census_with_svi_rank_sf <- pm_census_with_svi_rank %>%
   left_join(
     census_tracts %>% select(FIPS, geometry),
@@ -591,13 +597,224 @@ pm_census_with_svi_rank_sf <- pm_census_with_svi_rank %>%
 
 pm_census_with_svi_rank_sf <- st_as_sf(pm_census_with_svi_rank_sf)
 
+map_theme1 <- ggplot(pm_census_with_svi_rank_sf) +
+  geom_sf(aes(fill = rpl_theme1), color = "white", size = 0.01) +
+  scale_fill_gradient(
+    name = "Sensitivity",
+    low = "#f2e5ff", high = "#5e3c99",
+    limits = c(0, 1)
+  ) +
+  theme_void(base_size = 14) +
+  theme(
+    legend.position = "right"
+  )
+
+map_theme1
+
+ggsave("Theme1_Sensitivity.png", plot = map_theme1, 
+       width = 12, height = 8, dpi = 600, units = "in")
+
+```
+
+
+```{r sensitivity anch fb maps}
+
+# Anchorage - Sensitivity
+pm_theme1_anch <- pm_census_with_svi_rank_sf %>% filter(county == "Anchorage Municipality")
+
+map_theme1_anch <- ggplot(pm_theme1_anch) +
+  geom_sf(aes(fill = rpl_theme1), color = "white", size = 0.01) +
+  scale_fill_gradient(
+    low = "#f2e5ff", high = "#5e3c99",
+    limits = c(0, 1),
+    guide = "none"  # Hides the legend
+  ) +
+  theme_void() +
+  theme(
+    plot.title = element_blank()  # Hides title if added
+  )
+map_theme1_anch
+
+ggsave("Theme1_Sensitivity_Anchorage.png", plot = map_theme1_anch, width = 1700, height = 830, dpi = 300, units = "px")
+
+# Fairbanks - Sensitivity
+pm_theme1_fbx <- pm_census_with_svi_rank_sf %>% filter(county == "Fairbanks North Star Borough")
+
+map_theme1_fbx <- ggplot(pm_theme1_fbx) +
+  geom_sf(aes(fill = rpl_theme1), color = "white", size = 0.01) +
+  scale_fill_gradient(
+    low = "#f2e5ff", high = "#5e3c99",
+    limits = c(0, 1),
+    guide = "none"  # Hides the legend
+  ) +
+  theme_void() +
+  theme(
+    plot.title = element_blank()  # Hides title if added
+  )
+
+map_theme1_fbx
+
+ggsave("Theme1_Sensitivity_Fairbanks.png", plot = map_theme1_fbx, 
+       width = 12, height = 8, dpi = 600, units = "in")
+
+
+```
+
+
+### Adaptive Capacity
+
+```{r adaptive capacity map}
+
+map_theme2 <- ggplot(pm_census_with_svi_rank_sf) +
+  geom_sf(aes(fill = rpl_theme2), color = "white", size = 0.01) +
+  scale_fill_gradient(
+    name = "Adaptive Capacity",
+    low = "#fff2e5", high = "#e6550d",
+    limits = c(0, 1)
+  ) +
+  theme_void(base_size = 14) +
+  theme(
+    legend.position = "right"
+  )
+
+map_theme2
+
+ggsave("Theme2_AdaptiveCapacity.png", plot = map_theme2, 
+       width = 12, height = 8, dpi = 600, units = "in")
+
+```
+
+```{r adaptive capacity anch fb maps}
+
+# Anchorage - Adaptive Capacity
+pm_theme2_anch <- pm_census_with_svi_rank_sf %>%
+  filter(county == "Anchorage Municipality")
+
+map_theme2_anch <- ggplot(pm_theme2_anch) +
+  geom_sf(aes(fill = rpl_theme2), color = "white", size = 0.01) +
+  scale_fill_gradient(
+    low = "#fff2e5", high = "#e6550d",  # Light to dark orange
+    limits = c(0, 1),
+    guide = "none"
+  ) +
+  theme_void() +
+  theme(
+    plot.title = element_blank()
+  )
+
+map_theme2_anch
+
+ggsave(
+  "Theme2_AdaptiveCapacity_Anchorage.png",
+  plot = map_theme2_anch,
+  width = 12, height = 8, dpi = 600, units = "in"
+)
+
+# Fairbanks - Adaptive Capacity
+pm_theme2_fbx <- pm_census_with_svi_rank_sf %>%
+  filter(county == "Fairbanks North Star Borough")
+
+map_theme2_fbx <- ggplot(pm_theme2_fbx) +
+  geom_sf(aes(fill = rpl_theme2), color = "white", size = 0.01) +
+  scale_fill_gradient(
+    low = "#fff2e5", high = "#e6550d",
+    limits = c(0, 1),
+    guide = "none"
+  ) +
+  theme_void() +
+  theme(
+    plot.title = element_blank()
+  )
+
+map_theme2_fbx
+
+ggsave(
+  "Theme2_AdaptiveCapacity_Fairbanks.png",
+  plot = map_theme2_fbx,
+  width = 12, height = 8, dpi = 600, units = "in")
+
+```
+### Overall WSSVI Ranking
+
+```{r wssvi univariate}
+
+map_wssvi <- ggplot(pm_census_with_svi_rank_sf) +
+  geom_sf(aes(fill = composite_svi_rank), color = "white", size = 0.01) +
+  scale_fill_gradient(
+    name = "WSSVI (Overall)",
+    low = "#e0f3f8",  # light teal
+    high = "#005824",  # deep green
+    limits = c(0, 1)
+  ) +
+  theme_void(base_size = 14) +
+  theme(
+    legend.position = "right"
+  )
+
+map_wssvi
+
+ggsave("WSSVI_Overall.png", plot = map_wssvi, 
+       width = 12, height = 8, dpi = 600, units = "in")
+
+```
+
+```{r wssvi univariate anch fb maps}
+
+
+# Anchorage - Overall WSSVI
+pm_wssvi_anch <- pm_census_with_svi_rank_sf %>%
+  filter(county == "Anchorage Municipality")
+
+map_wssvi_anch <- ggplot(pm_wssvi_anch) +
+  geom_sf(aes(fill = composite_svi_rank), color = "white", size = 0.01) +
+  scale_fill_gradient(
+    low = "#e0f3f8", high = "#005824",
+    limits = c(0, 1),
+    guide = "none"
+  ) +
+  theme_void()
+
+map_wssvi_anch
+
+ggsave("WSSVI_Overall_Anchorage.png", plot = map_wssvi_anch,
+       width = 12, height = 8, dpi = 600, units = "in")
+
+# Fairbanks - Overall WSSVI
+pm_wssvi_fbx <- pm_census_with_svi_rank_sf %>%
+  filter(county == "Fairbanks North Star Borough")
+
+map_wssvi_fbx <- ggplot(pm_wssvi_fbx) +
+  geom_sf(aes(fill = composite_svi_rank), color = "white", size = 0.01) +
+  scale_fill_gradient(
+    low = "#e0f3f8", high = "#005824",
+    limits = c(0, 1),
+    guide = "none"
+  ) +
+  theme_void()
+
+map_wssvi_fbx
+
+ggsave("WSSVI_Overall_Fairbanks.png", plot = map_wssvi_fbx,
+       width = 12, height = 8, dpi = 600, units = "in")
+
+
+```
+
+
+
+## Bivariate Map
+
+A bivariate map was then created of wildfire smoke exposure and WSSVI by Census tract. Due to the strong variability in Alaskan Census tract size, separate vector graphics were created of all Census tracts in the Anchorage Borough and for Census tracts in the Fairbanks North Star Borough. These two graphics were then arranged with the larger bivariate map as borough pop-outs in the vector graphics editor <i> Inkscape </i>.   
+
+```{r geospatial svi, echo = F, warning = F, quiet = TRUE, fig.width=11, fig.height=8, dpi=300}
+
 # Step 1: Prepare the data and create bivariate classes
 pm_census_with_svi_rank_sf <- bi_class(
   pm_census_with_svi_rank_sf,
-  x = pm_normalized_rank,   # First variable: PM exposure rank
-  y = composite_svi_rank,  # Second variable: SVI rank
-  style = "quantile",      # Classification style
-  dim = 3                  # 3x3 grid
+  x = pm_normalized_rank,    # First variable: PM exposure rank
+  y = composite_svi_rank,    # Second variable: SVI rank
+  style = "quantile",        # Classification style
+  dim = 3                    # 3x3 grid
 )
 
 # Step 2: Create the bivariate map
@@ -609,7 +826,7 @@ map <- ggplot() +
   ) +
   bi_scale_fill(pal = "PurpleOr", dim = 3) + # Palette for bivariate mapping
   labs(
-    title = "Wildfire Smoke Exposure and Wildfire Social Vulnerability in Alaska"
+    # title = "Wildfire Smoke Exposure and Wildfire Social Vulnerability in Alaska"
   ) +
     bi_theme() +  # Assuming you're using a theme function for bivariate maps
   theme(
@@ -623,19 +840,24 @@ legend <- bi_legend(
   dim = 3,                 # Same dimensions as the map
   xlab = "Higher PM Exposure", # X-axis label
   ylab = "Higher WSSVI Score",   # Y-axis label
-  size = 8                 # Font size for labels
+  size = 11                # Font size for labels
 )
 
 # Step 4: Combine the map and legend
 final_plot <- ggdraw() +
   draw_plot(map, 0, 0, 1, 1) +         # Map takes full space
-  draw_plot(legend, 0.2, 0.2, 0.2, 0.2) # Adjust legend to Gulf area
+  # draw_plot(legend, 0.2, 0.2, 0.2, 0.2) # Adjust legend to Gulf area
+  draw_plot(legend,  x = 0.08, y = 0.25, width = 0.3, height = 0.3)  # Bigger and repositioned
 
 # Step 5: Display the final plot
 final_plot
 
 ggsave("Bivariate_Map.png", plot = final_plot,
-        width = 1700, height = 830, dpi = 300, units = "px")
+        width = 12, height = 8, dpi = 600, units = "in")
+
+#RDS file for Shiny app
+
+saveRDS(pm_census_with_svi_rank_sf, "pm_census_with_svi_rank_sf.RDS")
 
 ```
 
@@ -856,5 +1078,44 @@ summary_table <- hist_data %>%
   pivot_wider(names_from = PM_Category, values_from = Mean_Percentage)
 
 print(summary_table)
+
+```
+
+## T-Tests
+
+```{r t tests}
+
+run_tests <- hist_data %>%
+  group_by(Demographic) %>%
+  summarise(
+    p_value = t.test(Percentage ~ PM_Category)$p.value,
+    statistic = t.test(Percentage ~ PM_Category)$statistic
+  ) %>%
+  mutate(
+    p_adj = p.adjust(p_value, method = "BH"),  # Adjust for multiple comparisons
+    significance = case_when(
+      p_adj < 0.001 ~ "***",
+      p_adj < 0.01  ~ "**",
+      p_adj < 0.05  ~ "*",
+      TRUE ~ ""
+    )
+  ) %>%
+  arrange(p_adj)
+
+run_tests %>%
+  arrange(p_adj) %>%
+  kable(
+    digits = 3,
+    caption = "T-Test Results: High vs Low Smoke Exposure Tracts",
+    format = "html",
+    col.names = c("Demographic", "p-value", "t statistic", "Adjusted p", "Significance")
+  ) %>%
+  kable_styling(
+    full_width = FALSE,
+    bootstrap_options = c("striped", "hover", "condensed", "responsive")
+  ) %>%
+  row_spec(0, bold = TRUE) %>%  # Bold header row
+  column_spec(2:4, align = "c") %>%  # Center-align numeric columns
+  row_spec(which(run_tests$p_adj < 0.05), bold = TRUE, color = "black", background = "#ffeeba")  # Highlight significant rows
 
 ```
