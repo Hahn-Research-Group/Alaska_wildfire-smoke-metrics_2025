@@ -27,6 +27,7 @@ library(biscale)      # Bivariate plots
 library(cowplot)      # ggplot layers
 library(broom)        # Statistical summaries
 library(viridis)      # Color maps
+library(kableExtra)   # Table styling
 
 knitr::opts_knit$set(root.dir = here::here())
 here::i_am("OneDrive Files/5. Population Exposure/Scripts/2. High PM Tract Census Demographics and SVI.Rmd")
