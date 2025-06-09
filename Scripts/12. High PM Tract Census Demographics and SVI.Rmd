@@ -1108,14 +1108,14 @@ run_tests %>%
     digits = 3,
     caption = "T-Test Results: High vs Low Smoke Exposure Tracts",
     format = "html",
-    col.names = c("Demographic", "p-value", "t statistic", "Adjusted p", "Significance")
+    col.names = c("Demographic", "p-value", "t statistic", "Adjusted p", "Significance"),
+    align = c("l", "c", "c", "c", "l")  # Set column alignment here
   ) %>%
   kable_styling(
     full_width = FALSE,
     bootstrap_options = c("striped", "hover", "condensed", "responsive")
   ) %>%
-  row_spec(0, bold = TRUE) %>%  # Bold header row
-  column_spec(2:4, align = "c") %>%  # Center-align numeric columns
-  row_spec(which(run_tests$p_adj < 0.05), bold = TRUE, color = "black", background = "#ffeeba")  # Highlight significant rows
+  row_spec(0, bold = TRUE) %>%
+  row_spec(which(run_tests$p_adj < 0.05), bold = TRUE, color = "black", background = "#ffeeba")
 
 ```
